@@ -3,7 +3,7 @@ export const uploadPdf = async (file: File, zoom: number = 150): Promise<string>
   formData.append("file", file);
   formData.append("zoom", zoom.toString());
 
-  const response = await fetch("http://localhost:8085/upload", {
+  const response = await fetch("http://localhost:8787/upload", {
     method: "POST",
     body: formData,
   });
