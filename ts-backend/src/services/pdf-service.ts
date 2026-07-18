@@ -1,23 +1,35 @@
 /**
  * PDF Service — Orchestrator for PDF-to-HTML conversion.
  *
- * Handles the full request lifecycle:
- *   parse PDF → extract fonts → extract images → parse vectors → detect tables → generate HTML
+ * Handles the full request lifecycle using real pdf.js and service modules:
+ *   parse PDF → extract fonts → extract images → parse vectors → detect tables → render HTML
  *
  * All temporary data lives in memory (no filesystem). Each request is keyed by a UUID.
  */
 
+import { getDocument } from "pdfjs-dist";
+import type { PDFDocumentProxy, PDFPageProxy, TextItem } from "pdfjs-dist/types/src/display/api";
+
+import type {
+  FontSpec,
+  TextElement,
+  ImageElement,
+  VectorElement,
+  TableDefinition,
+} from "../models/types";
+import { ZOOM } from "../models/constants";
+
+import { extractFontsFromPdfjsDoc } from "./font-extractor";
+import { extractImagesFromPage } from "./image-extractor";
+import { extractVectorsFromPage } from "./vector-parser";
+import { detectTables as detectTablesFromVectors } from "./table-detector";
+import { renderPageToHtml } from "./html-renderer";
+import { mergeAdjacentTables } from "./table-merger";
+import { mapImagesToPagePositions } from "./image-position";
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-
-export interface FontData {
-  fontName: string;
-  fontFamily: string;
-  fontWeight: string;
-  fontStyle: string;
-  src?: string; // data-URI or URL for @font-face
-}
 
 export interface ExtractedImage {
   id: string;
@@ -25,55 +37,6 @@ export interface ExtractedImage {
   height: number;
   data: Uint8Array;
   mimeType: string;
-}
-
-export interface VectorPath {
-  d: string; // SVG path data
-  fill?: string;
-  stroke?: string;
-  strokeWidth?: number;
-}
-
-export interface TableRegion {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  rows: number;
-  cols: number;
-  cells: TableCell[][];
-}
-
-export interface TableCell {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  content: string;
-}
-
-export interface PdfParseResult {
-  totalPages: number;
-  pages: PageData[];
-}
-
-export interface PageData {
-  pageNumber: number;
-  width: number;
-  height: number;
-  textItems: TextItem[];
-  fonts: FontData[];
-  images: ExtractedImage[];
-  vectors: VectorPath[];
-  tables: TableRegion[];
-}
-
-export interface TextItem {
-  str: string;
-  transform: [number, number, number, number, number, number];
-  width: number;
-  height: number;
-  fontName: string;
 }
 
 export interface ConversionOptions {
@@ -99,14 +62,11 @@ export interface ConversionResult {
 class RequestBufferManager {
   private buffers = new Map<string, RequestBuffer>();
 
-  /**
-   * Allocate a new buffer for a request and return its ID.
-   */
   create(requestId: string): RequestBuffer {
     const buffer: RequestBuffer = {
       requestId,
       pdfBytes: null,
-      parseResult: null,
+      doc: null,
       fonts: [],
       images: [],
       vectors: [],
@@ -117,23 +77,16 @@ class RequestBufferManager {
     return buffer;
   }
 
-  /**
-   * Retrieve the buffer for a request (or undefined if already cleaned up).
-   */
   get(requestId: string): RequestBuffer | undefined {
     return this.buffers.get(requestId);
   }
 
-  /**
-   * Remove all data associated with a request. Safe to call multiple times.
-   */
   cleanup(requestId: string): void {
     const buffer = this.buffers.get(requestId);
     if (!buffer) return;
 
-    // Null out references so GC can collect large blobs sooner.
     buffer.pdfBytes = null;
-    buffer.parseResult = null;
+    buffer.doc = null;
     buffer.fonts = [];
     buffer.images = [];
     buffer.vectors = [];
@@ -143,9 +96,6 @@ class RequestBufferManager {
     this.buffers.delete(requestId);
   }
 
-  /**
-   * Number of active requests (useful for diagnostics / memory pressure).
-   */
   get activeCount(): number {
     return this.buffers.size;
   }
@@ -154,11 +104,11 @@ class RequestBufferManager {
 export interface RequestBuffer {
   requestId: string;
   pdfBytes: Uint8Array | null;
-  parseResult: PdfParseResult | null;
-  fonts: FontData[];
+  doc: PDFDocumentProxy | null;
+  fonts: FontSpec[];
   images: ExtractedImage[];
-  vectors: VectorPath[];
-  tables: TableRegion[];
+  vectors: VectorElement[];
+  tables: TableDefinition[];
   html: string | null;
 }
 
@@ -166,154 +116,215 @@ export interface RequestBuffer {
 const bufferManager = new RequestBufferManager();
 
 // ---------------------------------------------------------------------------
-// Helpers (Task 3.2)
+// Helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Generate a request ID. Uses the Web Crypto API available in Workers.
- */
 export function generateRequestId(): string {
   return crypto.randomUUID();
 }
 
-/**
- * Convenience: clean up a request's buffer after processing.
- */
 export function cleanupRequest(requestId: string): void {
   bufferManager.cleanup(requestId);
 }
 
 // ---------------------------------------------------------------------------
-// Stub service functions (Task 3.1)
-//
-// Each stub returns an empty result. The actual implementations will be wired
-// in by their respective tasks (font-extractor, image-extractor, etc.).
+// Text extraction (pdf.js TextItem → TextElement)
 // ---------------------------------------------------------------------------
 
-/** Stub: parse the PDF with pdf.js. */
-async function parsePdf(
-  _pdfBytes: Uint8Array,
-  _options?: ConversionOptions,
-): Promise<PdfParseResult> {
-  // TODO: Implement with pdfjs-dist (Task 4.x)
-  return { totalPages: 0, pages: [] };
-}
-
-/** Stub: extract font CSS and mappings from parsed data. */
-function extractFonts(_parseResult: PdfParseResult): FontData[] {
-  // TODO: Implement (Task 5.x)
-  return [];
-}
-
-/** Stub: extract embedded images. */
-function extractImages(_parseResult: PdfParseResult): ExtractedImage[] {
-  // TODO: Implement (Task 6.x)
-  return [];
-}
-
-/** Stub: parse vector paths (SVG overlays). */
-function parseVectors(_parseResult: PdfParseResult): VectorPath[] {
-  // TODO: Implement (Task 7.x)
-  return [];
-}
-
-/** Stub: detect table regions. */
-function detectTables(_parseResult: PdfParseResult): TableRegion[] {
-  // TODO: Implement (Task 8.x)
-  return [];
-}
-
-/** Stub: generate the final HTML string from all extracted data. */
-function generateHtml(
-  _parseResult: PdfParseResult,
-  _fonts: FontData[],
-  _images: ExtractedImage[],
-  _vectors: VectorPath[],
-  _tables: TableRegion[],
-  _zoomLevel: number,
-): string {
-  // TODO: Implement (Task 9.x)
-  return '';
-}
-
-/** Stub: inject @font-face CSS rules into the HTML. */
-function injectFontCss(html: string, fonts: FontData[]): string {
-  if (fonts.length === 0) return html;
-
-  const fontFaces = fonts
-    .map(
-      (f) =>
-        `@font-face { font-family: '${f.fontFamily}'; font-weight: ${f.fontWeight}; font-style: ${f.fontStyle}; src: ${f.src ?? 'local()'}; }`,
-    )
-    .join('\n');
-
-  const styleTag = `<style>\n${fontFaces}\n</style>`;
-
-  // Insert before </head> if present, otherwise prepend.
-  const headClose = html.indexOf('</head>');
-  if (headClose !== -1) {
-    return html.slice(0, headClose) + styleTag + '\n' + html.slice(headClose);
+/**
+ * Convert pdf.js TextItems into TextElement objects for the HTML renderer.
+ *
+ * pdf.js TextItems contain raw string + transform matrix.  We derive
+ * position (top, left), dimensions (width, height), and font metadata
+ * from the transform matrix and font name.
+ */
+function extractTextElements(
+  items: Array<TextItem>,
+  styles: Record<string, { fontFamily?: string; fontSize?: number; fontWeight?: number }>,
+  fonts: FontSpec[],
+): TextElement[] {
+  const fontById = new Map<string, FontSpec>();
+  for (const f of fonts) {
+    fontById.set(f.id, f);
   }
-  return styleTag + '\n' + html;
+
+  const elements: TextItem[] = [];
+  for (const item of items) {
+    if (!("str" in item) || !item.str) continue;
+    elements.push(item as TextItem);
+  }
+
+  const textElements: TextElement[] = [];
+
+  for (const item of elements) {
+    const [, , , , tx, ty] = item.transform;
+    const fontSpec = fontById.get(item.fontName) ?? null;
+
+    textElements.push({
+      type: "text",
+      text: item.str,
+      top: ty,
+      left: tx,
+      width: item.width,
+      height: item.height,
+      font_spec: fontSpec,
+      font_size: item.height,
+    });
+  }
+
+  return textElements;
 }
 
 // ---------------------------------------------------------------------------
-// Orchestrator (Task 3.1)
+// Orchestrator
 // ---------------------------------------------------------------------------
 
 /**
  * Convert a PDF to an HTML representation.
  *
- * This is the main entry point. It orchestrates the full pipeline:
- *   1. Generate request ID + allocate buffer
- *   2. Parse PDF (pdf.js)
- *   3. Extract fonts, images, vectors
- *   4. Detect tables
- *   5. Generate HTML
- *   6. Inject font CSS
- *   7. Clean up buffer
- *   8. Return HTML
+ * Pipeline:
+ *   1. Parse PDF with pdf.js → PDFDocumentProxy
+ *   2. Extract fonts (document-wide deduplication)
+ *   3. For each page: extract images, vectors, text
+ *   4. Detect tables from vectors + text
+ *   5. Map images to page positions
+ *   6. Render each page to HTML
+ *   7. Assemble multi-page output
+ *   8. Inject @font-face CSS
+ *   9. Clean up and return
  */
 export async function convertPdfToHtml(
   pdfBytes: Uint8Array,
   options: ConversionOptions = {},
 ): Promise<ConversionResult> {
-  const zoomLevel = options.zoomLevel ?? 100.0;
+  const zoomLevel = options.zoomLevel ?? ZOOM.DEFAULT;
   const requestId = generateRequestId();
   const buffer = bufferManager.create(requestId);
 
   try {
-    // Store raw PDF bytes in buffer.
     buffer.pdfBytes = pdfBytes;
 
-    // 1. Parse PDF.
-    const parseResult = await parsePdf(pdfBytes, { zoomLevel });
-    buffer.parseResult = parseResult;
+    // 1. Parse PDF with pdf.js.
+    const loadingTask = getDocument({ data: pdfBytes });
+    const doc = await loadingTask.promise;
+    buffer.doc = doc;
 
-    // 2. Extract font data.
-    const fonts = extractFonts(parseResult);
+    // 2. Extract fonts (all pages, deduplicated).
+    const fonts = await extractFontsFromPdfjsDoc(doc);
     buffer.fonts = fonts;
 
-    // 3. Extract images.
-    const images = extractImages(parseResult);
-    buffer.images = images;
+    // 3. Process each page.
+    const pageHtmls: string[] = [];
 
-    // 4. Parse vectors.
-    const vectors = parseVectors(parseResult);
-    buffer.vectors = vectors;
+    for (let pageNum = 1; pageNum <= doc.numPages; pageNum++) {
+      const page = await doc.getPage(pageNum);
+      const viewport = page.getViewport({ scale: 1.0 });
+      const pageWidth = viewport.width;
+      const pageHeight = viewport.height;
 
-    // 5. Detect tables.
-    const tables = detectTables(parseResult);
-    buffer.tables = tables;
+      // 3a. Extract images.
+      const images = await extractImagesFromPage(page, pageNum);
 
-    // 6. Generate HTML.
-    let html = generateHtml(parseResult, fonts, images, vectors, tables, zoomLevel);
+      // 3b. Extract vectors.
+      const vectors = await extractVectorsFromPage(page, pageNum);
+
+      // 3c. Extract text content for table detection and rendering.
+      const textContent = await page.getTextContent();
+      const textItems = textContent.items as TextItem[];
+      const textElements = extractTextElements(textItems, textContent.styles as Record<string, { fontFamily?: string; fontSize?: number; fontWeight?: number }>, fonts);
+
+      // 4. Detect tables from vectors + text.
+      let tables = detectTablesFromVectors(vectors, textElements);
+      tables = mergeAdjacentTables(tables);
+
+      // 5. Map images to page positions.
+      const imageElements = mapImagesToPagePositions(
+        images,
+        images.map((img) => ({ id: img.id, ctm: [1, 0, 0, 1, 0, 0] as [number, number, number, number, number, number] })),
+        pageWidth,
+        pageHeight,
+      );
+
+      // Collect all extracted data for diagnostics.
+      buffer.images.push(...images);
+      buffer.vectors.push(...vectors);
+      buffer.tables.push(...tables);
+
+      // 6. Render page to HTML.
+      const pageHtml = renderPageToHtml({
+        textElements,
+        images: imageElements,
+        tables,
+        vectors,
+        pageWidth,
+        pageHeight,
+        zoomLevel,
+        fontMapping: new Map(fonts.map((f) => [f.id, f.family])),
+      });
+
+      pageHtmls.push(pageHtml);
+    }
+
+    // 7. Assemble multi-page HTML.
+    const pagesContent = pageHtmls
+      .map((html) => {
+        // Extract just the inner content from each page's full HTML.
+        const bodyStart = html.indexOf('<div class="page-container">');
+        const bodyEnd = html.lastIndexOf("</div>");
+        if (bodyStart !== -1 && bodyEnd !== -1) {
+          return html.slice(bodyStart, bodyEnd + "</div>".length);
+        }
+        return html;
+      })
+      .join("\n");
+
+    const fullHtml =
+      `<!DOCTYPE html>\n` +
+      `<html lang="en">\n` +
+      `<head>\n` +
+      `  <meta charset="UTF-8" />\n` +
+      `  <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n` +
+      `  <style>\n` +
+      `    * { margin: 0; padding: 0; box-sizing: border-box; }\n` +
+      `    body { position: relative; background: #f0f0f0; }\n` +
+      `    .page-container {\n` +
+      `      position: relative;\n` +
+      `      overflow: hidden;\n` +
+      `      background: white;\n` +
+      `      margin: 10px auto;\n` +
+      `    }\n` +
+      `  </style>\n` +
+      `</head>\n` +
+      `<body>\n` +
+      `${pagesContent}\n` +
+      `</body>\n` +
+      `</html>`;
+
+    // 8. Inject @font-face CSS from embedded fonts.
+    // Font embedding (base64 data URIs) is handled by the font-embedder module
+    // when raw font bytes are available. Here we inject any font metadata that
+    // was already embedded in FontSpec objects (e.g., from font-embedder output).
+    let html = fullHtml;
+    if (fonts.length > 0) {
+      const fontFaces = fonts
+        .map(
+          (f) =>
+            `@font-face {\n  font-family: '${f.family}';\n  font-weight: ${f.font_weight};\n  font-style: ${f.is_italic ? "italic" : "normal"};\n  font-display: swap;\n}`,
+        )
+        .join("\n");
+
+      if (fontFaces) {
+        const styleTag = `<style>\n${fontFaces}\n</style>`;
+        const headClose = html.indexOf("</head>");
+        if (headClose !== -1) {
+          html = html.slice(0, headClose) + styleTag + "\n" + html.slice(headClose);
+        } else {
+          html = styleTag + "\n" + html;
+        }
+      }
+    }
+
     buffer.html = html;
-
-    // 7. Inject @font-face CSS.
-    html = injectFontCss(html, fonts);
-    buffer.html = html;
-
     return { html, requestId };
   } finally {
     // Always clean up, even if the pipeline throws.

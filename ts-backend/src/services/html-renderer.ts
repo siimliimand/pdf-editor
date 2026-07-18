@@ -324,14 +324,258 @@ function isGridTable(table: TableDefinition): boolean {
   return true;
 }
 
+// ---------------------------------------------------------------------------
+// Per-cell rendering helpers
+// ---------------------------------------------------------------------------
+
+interface CellBounds {
+  top: number;
+  left: number;
+  bottom: number;
+  right: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * Compute cell bounds from row/col positions and spans.
+ *
+ * Uses the table's row_positions and col_positions arrays plus the cell's
+ * row_span / col_span to derive the absolute top/left/bottom/right of a cell
+ * in PDF coordinate space.
+ */
+function getTableCellBounds(
+  cell: TableCell,
+  rowPositions: number[],
+  colPositions: number[],
+  tableRect: { top: number; left: number; bottom: number; right: number },
+): CellBounds {
+  const cellTop =
+    cell.row_idx < rowPositions.length
+      ? rowPositions[cell.row_idx]
+      : tableRect.top;
+
+  const cellLeft =
+    cell.col_idx < colPositions.length
+      ? colPositions[cell.col_idx]
+      : tableRect.left;
+
+  // Determine bottom from row span.
+  let cellBottom = tableRect.bottom;
+  if (cell.row_span > 0) {
+    const endRowIdx = Math.min(
+      cell.row_idx + cell.row_span,
+      rowPositions.length,
+    );
+    if (endRowIdx < rowPositions.length) {
+      cellBottom = rowPositions[endRowIdx];
+    }
+  }
+
+  // Determine right from col span.
+  let cellRight = tableRect.right;
+  if (cell.col_span > 0) {
+    const endColIdx = Math.min(
+      cell.col_idx + cell.col_span,
+      colPositions.length,
+    );
+    if (endColIdx < colPositions.length) {
+      cellRight = colPositions[endColIdx];
+    }
+  }
+
+  return {
+    top: cellTop,
+    left: cellLeft,
+    bottom: cellBottom,
+    right: cellRight,
+    width: cellRight - cellLeft,
+    height: cellBottom - cellTop,
+  };
+}
+
+/**
+ * Detect horizontal text alignment for the text elements in a cell.
+ *
+ * Compares the horizontal positions of text elements relative to cell bounds:
+ * - "left":  text starts within 15% of cell left
+ * - "right": text ends within 15% of cell right
+ * - "center": text is roughly centered (within 25% of center)
+ * - "left" by default
+ */
+function detectTextAlignment(
+  textElements: (TextElement | ImageElement)[],
+  cellBounds: CellBounds,
+): "left" | "right" | "center" {
+  if (textElements.length === 0) return "left";
+
+  const textEls = textElements.filter((el): el is TextElement => el.type === "text");
+  if (textEls.length === 0) return "left";
+
+  const cellWidth = cellBounds.right - cellBounds.left;
+  if (cellWidth <= 0) return "left";
+
+  // Use the last text element (often the most representative for alignment).
+  const lastEl = textEls[textEls.length - 1];
+  const elRight = lastEl.left + lastEl.width;
+  const marginFromLeft = lastEl.left - cellBounds.left;
+  const marginFromRight = cellBounds.right - elRight;
+
+  const tolerance = cellWidth * 0.15;
+  const centerTolerance = cellWidth * 0.25;
+  const centerPos = cellBounds.left + cellWidth / 2;
+  const elCenter = lastEl.left + lastEl.width / 2;
+
+  if (marginFromRight <= tolerance && marginFromLeft > tolerance) {
+    return "right";
+  }
+  if (marginFromLeft <= tolerance) {
+    return "left";
+  }
+  if (Math.abs(elCenter - centerPos) <= centerTolerance) {
+    return "center";
+  }
+
+  return "left";
+}
+
+/**
+ * Calculate cell padding from the first text element's position.
+ *
+ * Preserves the PDF's visual spacing by deriving padding from the gap between
+ * the cell boundary and the first text element. Falls back to a sensible
+ * default (2px 4px) when no text elements exist.
+ */
+function calculateCellPadding(
+  textElements: readonly (TextElement | ImageElement)[],
+  cellBounds: CellBounds,
+): { top: number; left: number; bottom: number; right: number } {
+  const defaultPadding = { top: 2, left: 4, bottom: 2, right: 4 };
+
+  const firstText = textElements.find((el): el is TextElement => el.type === "text");
+  if (!firstText) return defaultPadding;
+
+  const paddingTop = Math.max(0, firstText.top - cellBounds.top);
+  const paddingLeft = Math.max(0, firstText.left - cellBounds.left);
+
+  // Bottom/right padding: use the last text element.
+  const lastText = [...textElements]
+    .reverse()
+    .find((el): el is TextElement => el.type === "text");
+  let paddingBottom = defaultPadding.bottom;
+  let paddingRight = defaultPadding.right;
+
+  if (lastText) {
+    paddingBottom = Math.max(
+      0,
+      cellBounds.bottom - (lastText.top + lastText.height),
+    );
+    paddingRight = Math.max(
+      0,
+      cellBounds.right - (lastText.left + lastText.width),
+    );
+  }
+
+  return {
+    top: Math.min(paddingTop, cellBounds.height * 0.3),
+    left: Math.min(paddingLeft, cellBounds.width * 0.3),
+    bottom: Math.min(paddingBottom, cellBounds.height * 0.3),
+    right: Math.min(paddingRight, cellBounds.width * 0.3),
+  };
+}
+
+/**
+ * Render a single text element as an inline <span> within a cell.
+ *
+ * Unlike the page-level renderTextElement (which uses absolute positioning),
+ * this renders text as inline flow content with per-element font styling.
+ * Each span retains its own font_spec attributes.
+ */
+function renderCellTextSpan(
+  el: TextElement,
+  zoomLevel: number,
+  fontMapping: Map<string, string>,
+): string {
+  const styles: string[] = ["white-space: nowrap", "line-height: 1.2"];
+
+  if (el.font_spec) {
+    const spec = el.font_spec;
+    const family = fontMapping.get(spec.id) || spec.family;
+    const fontSize = scale(spec.size, zoomLevel);
+
+    styles.push(`font-family: '${escapeHtml(family)}', sans-serif`);
+    styles.push(`font-size: ${fontSize.toFixed(2)}px`);
+    styles.push(`color: ${spec.color}`);
+
+    if (spec.is_bold || (spec.font_weight && spec.font_weight >= 700)) {
+      styles.push("font-weight: bold");
+    } else if (spec.font_weight) {
+      styles.push(`font-weight: ${spec.font_weight}`);
+    }
+
+    if (spec.is_italic) {
+      styles.push("font-style: italic");
+    }
+  } else {
+    const fontSize = scale(el.font_size, zoomLevel);
+    styles.push(`font-size: ${fontSize.toFixed(2)}px`);
+  }
+
+  const styleAttr = styles.join("; ");
+  return `<span style="${styleAttr}">${escapeHtml(el.text)}</span>`;
+}
+
+/**
+ * Render a single image element as an inline <img> within a cell.
+ *
+ * Positions the image relative to the cell using absolute positioning,
+ * offset from the cell's origin.
+ */
+function renderCellImage(
+  el: ImageElement,
+  cellBounds: CellBounds,
+  zoomLevel: number,
+): string {
+  // Compute offset from cell origin.
+  const offsetY = el.top - cellBounds.top;
+  const offsetX = el.left - cellBounds.left;
+  const imgTop = scale(offsetY, zoomLevel);
+  const imgLeft = scale(offsetX, zoomLevel);
+  const imgWidth = scale(el.width, zoomLevel);
+  const imgHeight = scale(el.height, zoomLevel);
+
+  const styles = [
+    "position: absolute",
+    `top: ${imgTop.toFixed(2)}px`,
+    `left: ${imgLeft.toFixed(2)}px`,
+    `width: ${imgWidth.toFixed(2)}px`,
+    `height: ${imgHeight.toFixed(2)}px`,
+  ];
+
+  return `<img src="${el.src}" style="${styles.join("; ")}" alt="embedded image" />`;
+}
+
+/**
+ * Render a cell with per-cell padding, alignment detection, per-element font
+ * styles, and inline image support.
+ *
+ * The cell is rendered as a `<td>` with:
+ * - Padding calculated from the first text element's position relative to
+ *   cell bounds, preserving the PDF's visual spacing.
+ * - Text alignment detected from text element positions (left/right/center).
+ * - Each text element rendered as an inline `<span>` retaining its own
+ *   font spec (family, size, color, bold, italic).
+ * - Images rendered inline with absolute positioning relative to the cell.
+ */
 function renderCell(
   cell: TableCell,
   zoomLevel: number,
   fontMapping: Map<string, string>,
+  table?: TableDefinition,
 ): string {
   const attrs: string[] = [];
 
-  // HTML rowspan/colspan attributes (not CSS properties).
+  // HTML rowspan/colspan attributes.
   if (cell.row_span > 1) {
     attrs.push(`rowspan="${cell.row_span}"`);
   }
@@ -339,34 +583,68 @@ function renderCell(
     attrs.push(`colspan="${cell.col_span}"`);
   }
 
+  // Compute cell bounds if table context is available.
+  let cellBounds: CellBounds | null = null;
+  if (table) {
+    cellBounds = getTableCellBounds(
+      cell,
+      table.row_positions,
+      table.col_positions,
+      table.rect,
+    );
+  }
+
   // Border styles.
   const borderStyles: string[] = [];
   if (cell.style_top) borderStyles.push(`border-top: ${cell.style_top}`);
-  if (cell.style_bottom) borderStyles.push(`border-bottom: ${cell.style_bottom}`);
+  if (cell.style_bottom)
+    borderStyles.push(`border-bottom: ${cell.style_bottom}`);
   if (cell.style_left) borderStyles.push(`border-left: ${cell.style_left}`);
-  if (cell.style_right) borderStyles.push(`border-right: ${cell.style_right}`);
+  if (cell.style_right)
+    borderStyles.push(`border-right: ${cell.style_right}`);
 
   // Background color.
   if (cell.background_color) {
     borderStyles.push(`background-color: ${cell.background_color}`);
   }
 
-  // Vertical alignment for text content.
+  // Vertical alignment.
   borderStyles.push("vertical-align: top");
-  borderStyles.push("padding: 2px 4px");
+
+  // Calculate padding from text element positions.
+  if (cellBounds) {
+    const padding = calculateCellPadding(cell.text_elements, cellBounds);
+    borderStyles.push(
+      `padding: ${padding.top.toFixed(1)}px ${padding.right.toFixed(1)}px ${padding.bottom.toFixed(1)}px ${padding.left.toFixed(1)}px`,
+    );
+  } else {
+    borderStyles.push("padding: 2px 4px");
+  }
+
+  // Detect text alignment.
+  if (cellBounds) {
+    const alignment = detectTextAlignment(cell.text_elements, cellBounds);
+    borderStyles.push(`text-align: ${alignment}`);
+  }
+
+  // Position relative so absolutely-positioned images are contained.
+  borderStyles.push("position: relative");
+  borderStyles.push("overflow: hidden");
 
   const styleAttr =
     borderStyles.length > 0 ? ` style="${borderStyles.join("; ")}"` : "";
   const attrStr = attrs.length > 0 ? ` ${attrs.join(" ")}` : "";
 
-  // Render text elements within the cell.
+  // Render text elements as inline spans, images inline.
   const innerContent = cell.text_elements
     .map((el) => {
       if (el.type === "text") {
-        return renderTextElement(el, zoomLevel, fontMapping);
+        return renderCellTextSpan(el, zoomLevel, fontMapping);
       }
       if (el.type === "image") {
-        return renderImageElement(el, zoomLevel);
+        return cellBounds
+          ? renderCellImage(el, cellBounds, zoomLevel)
+          : "";
       }
       return "";
     })
@@ -445,7 +723,7 @@ export function renderGridTable(
     for (let c = 0; c < numCols; c++) {
       const cell = grid[r][c];
       if (cell) {
-        cells.push(renderCell(cell, zoomLevel, fontMapping));
+        cells.push(renderCell(cell, zoomLevel, fontMapping, table));
       } else {
         cells.push("<td></td>");
       }
@@ -501,77 +779,56 @@ export function renderLegacyTable(
 
   for (const cell of table.cells) {
     // Compute cell position from row/col indices and positions.
-    const cellTop =
-      cell.row_idx < table.row_positions.length
-        ? table.row_positions[cell.row_idx]
-        : table.rect.top;
-    const cellLeft =
-      cell.col_idx < table.col_positions.length
-        ? table.col_positions[cell.col_idx]
-        : table.rect.left;
-
-    // Compute cell dimensions from spans.
-    let cellHeight = scale(
-      table.rect.bottom - cellTop,
-      zoomLevel,
+    const cellBounds = getTableCellBounds(
+      cell,
+      table.row_positions,
+      table.col_positions,
+      table.rect,
     );
-    if (cell.row_span > 0) {
-      const endRowIdx = Math.min(
-        cell.row_idx + cell.row_span,
-        table.row_positions.length,
-      );
-      const endRowPos =
-        endRowIdx < table.row_positions.length
-          ? table.row_positions[endRowIdx]
-          : table.rect.bottom;
-      cellHeight = scale(endRowPos - cellTop, zoomLevel);
-    }
-
-    let cellWidth = scale(
-      table.rect.right - cellLeft,
-      zoomLevel,
-    );
-    if (cell.col_span > 0) {
-      const endColIdx = Math.min(
-        cell.col_idx + cell.col_span,
-        table.col_positions.length,
-      );
-      const endColPos =
-        endColIdx < table.col_positions.length
-          ? table.col_positions[endColIdx]
-          : table.rect.right;
-      cellWidth = scale(endColPos - cellLeft, zoomLevel);
-    }
 
     const cellStyles: string[] = [
       "position: absolute",
-      `top: ${scale(cellTop, zoomLevel).toFixed(2)}px`,
-      `left: ${scale(cellLeft, zoomLevel).toFixed(2)}px`,
-      `width: ${cellWidth.toFixed(2)}px`,
-      `height: ${cellHeight.toFixed(2)}px`,
-      "padding: 2px 4px",
+      `top: ${scale(cellBounds.top, zoomLevel).toFixed(2)}px`,
+      `left: ${scale(cellBounds.left, zoomLevel).toFixed(2)}px`,
+      `width: ${scale(cellBounds.width, zoomLevel).toFixed(2)}px`,
+      `height: ${scale(cellBounds.height, zoomLevel).toFixed(2)}px`,
       "overflow: hidden",
     ];
 
     // Border styles.
     if (cell.style_top) cellStyles.push(`border-top: ${cell.style_top}`);
-    if (cell.style_bottom) cellStyles.push(`border-bottom: ${cell.style_bottom}`);
+    if (cell.style_bottom)
+      cellStyles.push(`border-bottom: ${cell.style_bottom}`);
     if (cell.style_left) cellStyles.push(`border-left: ${cell.style_left}`);
-    if (cell.style_right) cellStyles.push(`border-right: ${cell.style_right}`);
+    if (cell.style_right)
+      cellStyles.push(`border-right: ${cell.style_right}`);
 
     // Background color.
     if (cell.background_color) {
       cellStyles.push(`background-color: ${cell.background_color}`);
     }
 
-    // Render text elements within the cell.
+    // Calculate padding from text element positions.
+    const padding = calculateCellPadding(cell.text_elements, cellBounds);
+    cellStyles.push(
+      `padding: ${padding.top.toFixed(1)}px ${padding.right.toFixed(1)}px ${padding.bottom.toFixed(1)}px ${padding.left.toFixed(1)}px`,
+    );
+
+    // Detect text alignment.
+    const alignment = detectTextAlignment(cell.text_elements, cellBounds);
+    cellStyles.push(`text-align: ${alignment}`);
+
+    // Position relative so absolutely-positioned images are contained.
+    cellStyles.push("position: relative");
+
+    // Render text elements as inline spans, images inline.
     const innerContent = cell.text_elements
       .map((el) => {
         if (el.type === "text") {
-          return renderTextElement(el, zoomLevel, fontMapping);
+          return renderCellTextSpan(el, zoomLevel, fontMapping);
         }
         if (el.type === "image") {
-          return renderImageElement(el, zoomLevel);
+          return renderCellImage(el, cellBounds, zoomLevel);
         }
         return "";
       })
