@@ -12,6 +12,8 @@
  * from the first curve's control-point geometry.
  */
 
+import "../pdfjs-compat";
+
 import { OPS } from 'pdfjs-dist';
 import type { PDFPageProxy } from 'pdfjs-dist';
 import { VectorElement } from '../models/types';

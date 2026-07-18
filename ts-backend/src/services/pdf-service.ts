@@ -7,6 +7,10 @@
  * All temporary data lives in memory (no filesystem). Each request is keyed by a UUID.
  */
 
+// Must come before pdfjs-dist: patches process so pdfjs-dist detects
+// a Node-like environment and skips Web Worker creation.
+import "../pdfjs-compat";
+
 import { getDocument } from "pdfjs-dist";
 import type { PDFDocumentProxy, PDFPageProxy, TextItem } from "pdfjs-dist/types/src/display/api";
 

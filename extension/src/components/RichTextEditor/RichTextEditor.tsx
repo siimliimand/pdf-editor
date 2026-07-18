@@ -8,22 +8,83 @@ interface RichTextEditorProps {
   onUpdate?: (html: string) => void;
 }
 
+/**
+ * Extract the body content from a full HTML document.
+ * If the content is a full HTML document (has <html>/<body> tags), extract just the body content.
+ * If it's already an HTML fragment, return as-is.
+ * Also injects inline width/height on page-container divs.
+ */
+function extractBodyContent(html: string): string {
+  // Extract page dimensions from CSS first
+  let pageWidth = 0;
+  let pageHeight = 0;
+  const widthMatch = html.match(/\.page-container\s*\{[\s\S]*?width:\s*([\d.]+)px/);
+  const heightMatch = html.match(/\.page-container\s*\{[\s\S]*?height:\s*([\d.]+)px/);
+  if (widthMatch) pageWidth = parseFloat(widthMatch[1]);
+  if (heightMatch) pageHeight = parseFloat(heightMatch[1]);
+
+  // Check if this is a full HTML document
+  const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  let bodyContent = bodyMatch ? bodyMatch[1].trim() : html;
+
+  // If no dimensions from CSS, calculate from element positions
+  if (pageWidth === 0 || pageHeight === 0) {
+    // Find max right/bottom by parsing all left: and top: values
+    let maxRight = 0;
+    let maxBottom = 0;
+    const leftRegex = /left:\s*([\d.]+)px/g;
+    const topRegex = /top:\s*([\d.]+)px/g;
+    let match;
+    while ((match = leftRegex.exec(bodyContent)) !== null) {
+      const left = parseFloat(match[1]);
+      if (left > maxRight) maxRight = left;
+    }
+    while ((match = topRegex.exec(bodyContent)) !== null) {
+      const top = parseFloat(match[1]);
+      if (top > maxBottom) maxBottom = top;
+    }
+    // Add padding and minimum size
+    if (maxRight > 0 && pageWidth === 0) pageWidth = Math.ceil(maxRight + 50);
+    if (maxBottom > 0 && pageHeight === 0) pageHeight = Math.ceil(maxBottom + 50);
+    // Fallback: A4 at 96 DPI
+    if (pageWidth === 0) pageWidth = 794;
+    if (pageHeight === 0) pageHeight = 1123;
+  }
+
+  // Inject inline dimensions on page-container divs
+  if (pageWidth > 0 && pageHeight > 0) {
+    bodyContent = bodyContent.replace(
+      /(<div\s+class="page-container")/g,
+      `$1 style="width: ${pageWidth}px; height: ${pageHeight}px; position: relative; overflow: hidden; background: white;"`
+    );
+  }
+
+  return bodyContent;
+}
+
+/**
+ * Extract CSS styles from the HTML content (without dimensions, those go inline).
+ */
+function extractStyles(html: string) {
+  const styleTags = html.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) || [];
+  return styleTags.map(tag => {
+    const match = tag.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+    return match ? match[1] : '';
+  }).join('\n');
+}
+
 const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onUpdate }) => {
 
-  // Extract PDF styles (CSS) from the HTML content
-  const styles = useMemo(() => {
-    const styleTags = content.match(/<style[^>]*>([\s\S]*?)<\/style>/gi);
-    if (!styleTags) return '';
-
-    return styleTags.map(tag => {
-        const match = tag.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
-        return match ? match[1] : '';
-    }).join('\n');
+  // Extract body content and styles from the HTML
+  const { bodyContent, styles } = useMemo(() => {
+    const bodyContent = extractBodyContent(content);
+    const styles = extractStyles(content);
+    return { bodyContent, styles };
   }, [content]);
 
   const editor = useEditor({
     extensions: getExtensions(),
-    content: content,
+    content: bodyContent,
     onUpdate: ({ editor }) => {
       onUpdate?.(editor.getHTML());
     },
@@ -73,28 +134,30 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onUpdate }) =>
             .ProseMirror {
                 outline: none;
                 min-height: 100%;
-                background: #ccc;
+                background: transparent;
                 padding: 0;
-                width: fit-content; /* Allow ProseMirror to grow with content */
-                min-width: 100%; /* But at least fill the container */
+                width: fit-content;
+                min-width: 100%;
+            }
+            /* Page container styling - dimensions are now inline */
+            .page-container {
+                margin: 0 auto !important;
+                background: white;
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
             }
             /* Center the PDF page div and ensure it can grow beyond viewport */
             div[id^="page"] {
                 margin: 0 auto !important;
                 background: white;
-                max-width: none !important; /* Prevent any max-width constraint */
-                /* Don't override width - let inline styles from backend work */
+                max-width: none !important;
             }
             /* Minimal table styles - let backend dynamic styles take precedence */
             .ProseMirror table {
                 border-collapse: collapse;
                 table-layout: fixed;
                 margin: 0;
-                /* Remove static width to allow natural sizing */
             }
             .ProseMirror td, .ProseMirror th {
-                /* Removed min-width - let backend control column widths via colgroup */
-                /* Remove static borders and padding - use inline styles from backend */
                 vertical-align: top;
             }
          `}</style>

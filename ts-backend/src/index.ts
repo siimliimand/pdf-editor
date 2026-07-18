@@ -1,3 +1,14 @@
+// Polyfill minimal browser globals for pdfjs-dist in Cloudflare Workers.
+// pdfjs-dist v4 accesses window.location during static initialization of PDFWorker.
+if (typeof globalThis.window === 'undefined') {
+  (globalThis as any).window = {
+    location: { href: 'http://localhost:8787/', origin: 'http://localhost:8787' },
+    matchMedia: () => ({ matches: false }),
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  };
+}
+
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { healthRouter } from './routers/health';
