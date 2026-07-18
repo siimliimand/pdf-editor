@@ -12,7 +12,7 @@ interface RichTextEditorProps {
  * Extract the body content from a full HTML document.
  * If the content is a full HTML document (has <html>/<body> tags), extract just the body content.
  * If it's already an HTML fragment, return as-is.
- * Also injects inline width/height on page-container divs from the CSS.
+ * Also injects inline width/height on page-container divs.
  */
 function extractBodyContent(html: string): string {
   // Extract page dimensions from CSS first
@@ -27,7 +27,26 @@ function extractBodyContent(html: string): string {
   const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
   let bodyContent = bodyMatch ? bodyMatch[1].trim() : html;
 
-  // Inject inline dimensions on page-container divs if we found them in CSS
+  // If no dimensions from CSS, calculate from element positions
+  if (pageWidth === 0 || pageHeight === 0) {
+    // Find max top/height and left/width from absolutely positioned divs
+    let maxRight = 0;
+    let maxBottom = 0;
+    const posRegex = /position:\s*absolute[^"]*?top:\s*([\d.]+)px[^"]*?left:\s*([\d.]+)px[^"]*?width:\s*([\d.]+)px[^"]*?height:\s*([\d.]+)px/g;
+    let match;
+    while ((match = posRegex.exec(bodyContent)) !== null) {
+      const top = parseFloat(match[1]);
+      const left = parseFloat(match[2]);
+      const width = parseFloat(match[3]);
+      const height = parseFloat(match[4]);
+      if (left + width > maxRight) maxRight = left + width;
+      if (top + height > maxBottom) maxBottom = top + height;
+    }
+    if (maxRight > 0 && pageWidth === 0) pageWidth = Math.ceil(maxRight + 20);
+    if (maxBottom > 0 && pageHeight === 0) pageHeight = Math.ceil(maxBottom + 20);
+  }
+
+  // Inject inline dimensions on page-container divs
   if (pageWidth > 0 && pageHeight > 0) {
     bodyContent = bodyContent.replace(
       /(<div\s+class="page-container")/g,
