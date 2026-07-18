@@ -29,28 +29,23 @@ function extractBodyContent(html: string): string {
 
   // If no dimensions from CSS, calculate from element positions
   if (pageWidth === 0 || pageHeight === 0) {
-    // Find max right/bottom from absolutely positioned divs with actual height (skip SVGs with height: 0)
+    // Find max right/bottom by parsing all left: and top: values
     let maxRight = 0;
     let maxBottom = 0;
-    // Match all absolutely positioned elements and extract their dimensions
-    const allElements = bodyContent.match(/style="[^"]*position:\s*absolute[^"]*"/g) || [];
-    for (const styleStr of allElements) {
-      const topMatch = styleStr.match(/top:\s*([\d.]+)px/);
-      const leftMatch = styleStr.match(/left:\s*([\d.]+)px/);
-      const widthMatch = styleStr.match(/width:\s*([\d.]+)px/);
-      const heightMatch = styleStr.match(/height:\s*([\d.]+)px/);
-      if (!topMatch || !leftMatch || !widthMatch || !heightMatch) continue;
-      const top = parseFloat(topMatch[1]);
-      const left = parseFloat(leftMatch[1]);
-      const width = parseFloat(widthMatch[1]);
-      const height = parseFloat(heightMatch[1]);
-      // Skip elements with zero height (SVGs, empty divs)
-      if (height <= 0) continue;
-      if (left + width > maxRight) maxRight = left + width;
-      if (top + height > maxBottom) maxBottom = top + height;
+    const leftRegex = /left:\s*([\d.]+)px/g;
+    const topRegex = /top:\s*([\d.]+)px/g;
+    let match;
+    while ((match = leftRegex.exec(bodyContent)) !== null) {
+      const left = parseFloat(match[1]);
+      if (left > maxRight) maxRight = left;
     }
-    if (maxRight > 0 && pageWidth === 0) pageWidth = Math.ceil(maxRight + 20);
-    if (maxBottom > 0 && pageHeight === 0) pageHeight = Math.ceil(maxBottom + 20);
+    while ((match = topRegex.exec(bodyContent)) !== null) {
+      const top = parseFloat(match[1]);
+      if (top > maxBottom) maxBottom = top;
+    }
+    // Add padding and minimum size
+    if (maxRight > 0 && pageWidth === 0) pageWidth = Math.ceil(maxRight + 50);
+    if (maxBottom > 0 && pageHeight === 0) pageHeight = Math.ceil(maxBottom + 50);
     // Fallback: A4 at 96 DPI
     if (pageWidth === 0) pageWidth = 794;
     if (pageHeight === 0) pageHeight = 1123;
