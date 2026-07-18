@@ -2,76 +2,62 @@
 
 ## Architecture Overview
 
-PDF Editor is a two-component system for viewing and editing PDF documents in the browser. A **Chrome extension** (React/TypeScript) serves as the frontend, and a **FastAPI backend** (Python) handles PDF-to-HTML conversion using Poppler's `pdftohtml` tool. The backend transforms PDF files into semantic HTML with embedded fonts, images, and vector graphics, which the extension then renders in a Tiptap-based rich text editor.
+PDF Editor is a two-component system for viewing and editing PDF documents in the browser. A **Chrome extension** (React/TypeScript) serves as the frontend, and a **TypeScript backend** (Cloudflare Workers) handles PDF-to-HTML conversion using pdf.js. The backend transforms PDF files into semantic HTML with embedded fonts, images, and vector graphics, which the extension then renders in a Tiptap-based rich text editor.
 
-**Architectural style:** Client-server with extension shell. The backend is stateless and request-scoped (each upload gets a temp directory, processed, then cleaned up). The frontend is a Chrome Manifest V3 extension that opens a dedicated editor tab.
+A legacy **Python FastAPI backend** exists in `backend/` but is being phased out in favor of the TypeScript implementation.
+
+**Architectural style:** Client-server with extension shell. The backend is stateless and request-scoped (each upload gets in-memory buffers, processed, then cleaned up). The frontend is a Chrome Manifest V3 extension that opens a dedicated editor tab.
 
 ## 1. Project Structure
 
 ```
 PDF-editor/
-├── backend/                        # Python FastAPI server
-│   ├── main.py                     # App entry point, CORS, router wiring
-│   ├── routers/
-│   │   ├── pdf.py                  # POST /upload endpoint
-│   │   └── health.py               # GET /health endpoint
-│   ├── services/
-│   │   ├── pdf_service.py          # Core conversion orchestrator
-│   │   ├── font_embedder.py        # PDF font extraction → @font-face CSS
-│   │   ├── font_cache.py           # Font caching (hash-based, filesystem)
-│   │   ├── font_extractor/         # PyMuPDF font detail extraction
-│   │   ├── vector_parser.py        # PDF vector element parsing (pdfminer)
-│   │   ├── image_extractor_pymupdf.py  # Image extraction (PyMuPDF)
-│   │   ├── image_extractor/        # Fallback image extractor
-│   │   └── xml_parser/             # XML→HTML conversion engine
-│   │       ├── parser/             # Core XML parsing logic
-│   │       ├── extractors/         # Element, font, image extraction from XML
-│   │       ├── renderers/          # HTML rendering (text blocks, tables)
-│   │       ├── table_detector/     # Table structure detection
-│   │       ├── flow_processor/     # Reading order / column detection
-│   │       └── models.py           # Data models (FontSpec, TextElement, etc.)
-│   ├── tests/                      # Test directory
-│   ├── requirements.txt            # Python dependencies
-│   └── temp/                       # Request-scoped temp files (auto-cleaned)
-├── extension/                      # Chrome extension (React/TypeScript)
+├── ts-backend/                       # TypeScript backend (Cloudflare Workers)
 │   ├── src/
-│   │   ├── editor.tsx              # Main editor entry point
-│   │   ├── editor.css              # Tailwind import
-│   │   ├── options.tsx             # Extension options page
-│   │   ├── options.css             # Options page styles
-│   │   ├── service_worker.ts       # Chrome service worker (MV3)
-│   │   ├── util.ts                 # Chrome storage helpers
-│   │   ├── hooks/
-│   │   │   └── usePdfEditor.ts     # Editor state management hook
+│   │   ├── index.ts                  # Hono app entry point
+│   │   ├── models/
+│   │   │   ├── types.ts              # TypeScript interfaces
+│   │   │   └── constants.ts          # Pipeline constants
 │   │   ├── services/
-│   │   │   └── pdfService.ts       # Backend API client
+│   │   │   ├── pdf-service.ts        # Core conversion orchestrator
+│   │   │   ├── font-extractor.ts     # Font extraction from pdf.js
+│   │   │   ├── font-embedder.ts      # @font-face CSS generation
+│   │   │   ├── font-cache.ts         # LRU cache + R2 persistence
+│   │   │   ├── image-extractor.ts    # Image extraction
+│   │   │   ├── vector-parser.ts      # Vector element parsing
+│   │   │   ├── table-detector.ts     # Table structure detection
+│   │   │   ├── table-merger.ts       # Adjacent table merging
+│   │   │   ├── html-renderer.ts      # HTML rendering engine
+│   │   │   └── image-position.ts     # Image position matching
+│   │   └── routers/
+│   │       ├── pdf.ts                # POST /upload endpoint
+│   │       └── health.ts             # GET /health endpoint
+│   ├── wrangler.toml                 # Cloudflare Workers config
+│   ├── package.json                  # Node dependencies
+│   └── tsconfig.json                 # TypeScript config
+├── backend/                          # Legacy Python FastAPI server (deprecated)
+│   ├── main.py                       # App entry point
+│   ├── services/                     # PDF processing services
+│   └── ...                           # (see Python backend docs)
+├── extension/                        # Chrome extension (React/TypeScript)
+│   ├── src/
+│   │   ├── editor.tsx                # Main editor entry point
+│   │   ├── hooks/
+│   │   │   └── usePdfEditor.ts       # Editor state management hook
+│   │   ├── services/
+│   │   │   └── pdfService.ts         # Backend API client (port 8787)
 │   │   └── components/
-│   │       ├── EditorView.tsx      # Main editor layout
-│   │       ├── EditorToolbar.tsx   # Top toolbar (file name, zoom, close)
-│   │       ├── UploadView.tsx      # Initial upload screen
-│   │       ├── FileUploader.tsx    # File input handler
-│   │       ├── PreviewFrame.tsx    # iframe-based PDF preview (unused currently)
-│   │       ├── LoadingOverlay.tsx  # Loading spinner
-│   │       ├── ErrorState.tsx      # Error display with retry
-│   │       └── RichTextEditor/     # Tiptap-based rich text editor
-│   │           ├── RichTextEditor.tsx  # Editor component
-│   │           ├── EditorToolbar.tsx   # Formatting toolbar
-│   │           ├── extensions.ts       # Tiptap extensions (Div, Span, Table, etc.)
-│   │           └── index.ts
-│   ├── public/
-│   │   ├── manifest.json           # Chrome MV3 manifest
-│   │   └── icon.png
-│   ├── editor.html                 # Editor tab HTML shell
-│   ├── options.html                # Options tab HTML shell
-│   ├── tailwind.config.js          # Tailwind CSS config
-│   ├── vite.config.ts              # Vite build config (with zip plugin)
-│   ├── tsconfig.json               # TypeScript config
-│   └── package.json                # Node dependencies
-├── docs/                           # Analysis/debug documentation
-├── openspec/                       # OpenSpec change management
-├── AGENTS.md                       # AI agent instructions
-├── ARCHITECTURE.md                 # This file
-└── DESIGN.md                       # Design system documentation
+│   │       ├── EditorView.tsx        # Main editor layout
+│   │       ├── RichTextEditor/       # Tiptap-based rich text editor
+│   │       │   ├── RichTextEditor.tsx
+│   │       │   ├── extensions.ts     # Custom Tiptap extensions
+│   │       │   └── EditorToolbar.tsx
+│   │       └── ...
+│   ├── manifest.json                 # Chrome MV3 manifest
+│   └── package.json                  # Node dependencies
+├── openspec/                         # OpenSpec change management
+├── ARCHITECTURE.md                   # This file
+└── DESIGN.md                         # Design system documentation
 ```
 
 ## 2. High-Level System Diagram
@@ -79,10 +65,8 @@ PDF-editor/
 ```mermaid
 graph LR
     User([User]) -->|Uploads PDF| Ext[Chrome Extension<br/>React + Tiptap]
-    Ext -->|POST /upload<br/>multipart/form-data| API[FastAPI Backend<br/>:8085]
-    API -->|pdftohtml -xml| PDFTOHTML[Poppler pdftohtml]
-    API -->|PyMuPDF| PYMUPDF[PyMuPDF<br/>fonts + images]
-    API -->|pdfminer| PDFMINER[pdfminer.six<br/>vectors]
+    Ext -->|POST /upload<br/>multipart/form-data| API[TypeScript Backend<br/>:8787 Hono/Workers]
+    API -->|pdf.js| PDFJS[pdf.js<br/>PDF parsing]
     API -->|returns HTML| Ext
     Ext -->|Renders in| Editor[Tiptap Editor<br/>rich text editing]
 ```
@@ -110,29 +94,25 @@ graph LR
 **Inputs:** PDF file (via file input), zoom level
 **Outputs:** Displays editable HTML rendering of the PDF
 
-### 3.2 Backend — FastAPI Server
+### 3.2 Backend — TypeScript (Cloudflare Workers)
 
 **Responsibility:** Convert uploaded PDF files to semantic HTML with embedded fonts, images, and vector graphics.
 
 **Key files:**
-- `backend/main.py` — FastAPI app, CORS config, router wiring
-- `backend/routers/pdf.py` — `POST /upload` endpoint (file + zoom → HTML)
-- `backend/services/pdf_service.py` — Core orchestrator: save → fonts → zoom → pdftohtml → images → vectors → tables → HTML → inject fonts
+- `ts-backend/src/index.ts` — Hono app entry point with CORS and routes
+- `ts-backend/src/routers/pdf.ts` — `POST /upload` endpoint (file + zoom → HTML)
+- `ts-backend/src/services/pdf-service.ts` — Core orchestrator: parse → fonts → images → vectors → tables → HTML
 
-**Technologies:** Python, FastAPI, uvicorn, PyMuPDF (fitz), pdfminer.six, Pillow, aiofiles
+**Technologies:** TypeScript, Hono, pdf.js, LRU-cache, Cloudflare Workers
 
-**Conversion Pipeline (pdf_service.py):**
-1. Save uploaded PDF to temp directory
-2. Extract and cache fonts via `FontEmbedder` (PyMuPDF)
-3. Calculate zoom factors (72pt→96px DPI conversion, capped at 3.0x for pdftohtml)
-4. Run `pdftohtml -xml -stdout -hidden -zoom <scale>` to get XML
-5. Extract images via `ImageExtractorPyMuPDF` (render-crop strategy)
-6. Extract font details via `FontExtractorPyMuPDF`
-7. Parse vector elements via `VectorParser` (pdfminer)
-8. Re-run pdftohtml at 1.0x scale for table detection if needed
-9. Parse XML to semantic HTML via `xml_parser` module
-10. Inject `@font-face` CSS into HTML output
-11. Cleanup temp directory
+**Conversion Pipeline (pdf-service.ts):**
+1. Parse PDF with pdf.js
+2. Extract fonts via `FontExtractor` (pdf.js)
+3. Extract images via `ImageExtractor` (pdf.js)
+4. Extract vectors via `VectorParser` (pdf.js)
+5. Detect tables via `TableDetector` (vector-based grid detection)
+6. Render HTML via `HtmlRenderer` (absolute positioning)
+7. Embed fonts via `FontEmbedder` (base64 data URIs)
 
 **Inputs:** PDF bytes + zoom level (float)
 **Outputs:** JSON `{ html: string }`
@@ -168,25 +148,20 @@ graph LR
 sequenceDiagram
     participant U as User
     participant E as Extension
-    participant B as Backend
-    participant P as pdftohtml
-    participant M as PyMuPDF/pdfminer
+    participant B as TS Backend
+    participant P as pdf.js
 
     U->>E: Select PDF file
     E->>E: usePdfEditor.handleFileUpload()
     E->>B: POST /upload (file + zoom)
-    B->>B: Save to temp/<uuid>/input.pdf
-    B->>M: Extract fonts (PyMuPDF)
-    M-->>B: Font data + metadata
-    B->>B: Calculate zoom factors
-    B->>P: pdftohtml -xml -zoom <scale>
-    P-->>B: XML content
-    B->>M: Extract images (PyMuPDF render-crop)
-    M-->>B: Image files (PNG)
-    B->>M: Extract vectors (pdfminer)
-    M-->>B: VectorElement list
-    B->>B: Parse XML → semantic HTML
-    B->>B: Inject @font-face CSS
+    B->>P: Parse PDF document
+    P-->>B: PDF metadata + pages
+    B->>B: Extract fonts (pdf.js)
+    B->>B: Extract images (pdf.js)
+    B->>B: Extract vectors (pdf.js)
+    B->>B: Detect tables (vector clustering)
+    B->>B: Render HTML (absolute positioning)
+    B->>B: Embed fonts (base64 data URIs)
     B-->>E: JSON { html: "..." }
     E->>E: RichTextEditor renders HTML in Tiptap
     E-->>U: Editable PDF view
@@ -205,8 +180,8 @@ When the user changes zoom:
 
 | Store | Type | Purpose | Location |
 |-------|------|---------|----------|
-| Font cache | Filesystem | Cached font CSS files + JSON metadata | `backend/fonts_cache/` |
-| Temp files | Filesystem | Per-request PDF processing (auto-cleaned) | `backend/temp/<uuid>/` |
+| Font cache | In-memory + R2 | LRU cache for font CSS entries | `ts-backend` (Workers runtime) |
+| Request buffers | In-memory | Per-request PDF processing | `ts-backend` (Workers runtime) |
 | Chrome storage | Browser API | Extension preferences (via `util.ts`) | `chrome.storage.local` |
 
 No traditional database. All state is request-scoped or browser-local.
@@ -215,9 +190,9 @@ No traditional database. All state is request-scoped or browser-local.
 
 | Integration | Method | Config | Auth | Failure Behavior |
 |-------------|--------|--------|------|------------------|
-| pdftohtml (Poppler) | subprocess | System PATH | None | Startup crash (`RuntimeError`) |
+| pdf.js | npm package | Local | None | N/A (bundled) |
 | Chrome Extension APIs | Browser API | `manifest.json` | User permission | Graceful degradation |
-| Backend server | HTTP `fetch` | `localhost:8085` (hardcoded) | None | Error displayed in UI |
+| Backend server | HTTP `fetch` | `localhost:8787` (hardcoded) | None | Error displayed in UI |
 
 ## 7. Key Technologies
 
@@ -230,21 +205,18 @@ No traditional database. All state is request-scoped or browser-local.
 | Frontend | Tiptap | 3.13.x | Rich text editor (ProseMirror) |
 | Frontend | JSZip | 3.10.1 | Build-time zip packaging |
 | Frontend | Lucide React | 0.561.0 | Icons |
-| Backend | Python | 3.x | Runtime |
-| Backend | FastAPI | latest | HTTP framework |
-| Backend | uvicorn | latest | ASGI server |
-| Backend | PyMuPDF | latest | PDF font/image extraction |
-| Backend | pdfminer.six | latest | Vector element parsing |
-| Backend | Pillow | latest | Image processing |
-| Backend | aiofiles | latest | Async file I/O |
-| System | Poppler (pdftohtml) | - | PDF→XML conversion |
+| Backend | TypeScript | 5.x | Runtime |
+| Backend | Hono | latest | HTTP framework (Workers) |
+| Backend | pdf.js | latest | PDF parsing + font/image extraction |
+| Backend | LRU-cache | latest | In-memory font caching |
+| Backend | Cloudflare Workers | - | Serverless runtime |
 
 ## 8. Deployment & Infrastructure
 
 **Development setup:**
 ```bash
-# Backend
-cd backend && source venv/bin/activate && uvicorn main:app --reload --port 8085
+# TypeScript Backend (Cloudflare Workers)
+cd ts-backend && npm run dev  # wrangler dev
 
 # Extension
 cd extension && npm run dev  # Vite watch mode
@@ -254,9 +226,11 @@ cd extension && npm run dev  # Vite watch mode
 - `extension/dist/` — Built extension files
 - `extension/zip/pdf-editor<version>.zip` — Packaged extension for Chrome Web Store (auto-generated by Vite plugin)
 
-**No containerization, no CI/CD pipeline, no deployment automation.**
+**Deployment:**
+- TypeScript backend deploys to Cloudflare Workers via `wrangler deploy`
+- Extension distributed via Chrome Web Store or sideloaded
 
-The backend requires Poppler utilities (`pdftohtml`) installed on the system.
+**No containerization, no CI/CD pipeline, no deployment automation.**
 
 ## 9. Security Architecture
 
@@ -264,38 +238,35 @@ The backend requires Poppler utilities (`pdftohtml`) installed on the system.
 - **No authentication** on the backend upload endpoint
 - **No input validation** beyond content-type check (`application/pdf`)
 - **No rate limiting** on upload endpoint
-- **Temp files** are cleaned up after each request (UUID-scoped directories)
+- **In-memory buffers** — request-scoped, cleaned up after each request
 - **Chrome extension permissions:** Only `storage` requested (minimal)
 - **Service worker** opens editor in a new tab on icon click (no background processing)
 
 ## 10. Monitoring & Observability
 
-- **Logging:** Python `print()` statements with emoji prefixes (⚠️, ✓) — no structured logging
+- **Logging:** Console logging in Workers runtime
 - **No metrics, tracing, or error reporting**
-- **No health check beyond `GET /health` returning `{"status": "ok"}`**
+- **Health check:** `GET /health` returning `{"status": "ok"}`**
 
 ## 11. Performance & Scalability
 
-- **Per-request temp directories** with UUID isolation prevent collisions but add I/O overhead
-- **Font caching** (filesystem) avoids re-extracting the same fonts across requests
-- **pdftohtml cap at 3.0x** prevents excessive memory usage for high zoom levels
-- **Double pdftohtml run** at non-1.0x zoom levels (once for rendering, once at 1.0x for table detection) adds latency
-- **No concurrency control** — FastAPI async handlers but subprocess calls block the event loop
-- **Image extraction** uses render-crop strategy (high quality but computationally expensive)
-- **Single-threaded backend** (uvicorn default) — would need workers for production
+- **In-memory request buffers** — no filesystem I/O overhead
+- **Font caching** (LRU + R2) avoids re-extracting the same fonts across requests
+- **Serverless deployment** — Cloudflare Workers auto-scale with demand
+- **Image extraction** uses pdf.js built-in methods (efficient)
+- **Single-threaded backend** — Workers are single-threaded but handle concurrent requests via async
 
 ## 12. Development Workflow
 
 | Command | Location | Purpose |
 |---------|----------|---------|
-| `uvicorn main:app --reload --port 8085` | `backend/` | Start backend dev server |
+| `npm run dev` | `ts-backend/` | Start TypeScript backend (wrangler dev) |
 | `npm run dev` | `extension/` | Vite watch mode (builds extension) |
 | `npm run build` | `extension/` | Production build + zip |
 
 **Prerequisites:**
-- Python 3.x with venv
 - Node.js (v22.18.0+)
-- Poppler utilities (`pdftohtml` in PATH)
+- npm
 
 ## 13. Testing Strategy
 
@@ -306,9 +277,9 @@ The backend requires Poppler utilities (`pdftohtml`) installed on the system.
 
 ## 14. Architectural Decisions & Rationale
 
-1. **pdftohtml over pure-Python PDF parsing** — Better layout fidelity for complex PDFs; trades off a system dependency
-2. **PyMuPDF for fonts/images over pdfminer** — More reliable extraction, native support for font data and pixmap rendering
-3. **pdfminer for vectors** — pdfminer's layout analysis provides structured vector element data that PyMuPDF doesn't expose as cleanly
+1. **pdf.js over pdftohtml** — Pure JavaScript PDF parsing; no system dependency; runs in Workers
+2. **TypeScript backend over Python** — Serverless deployment to Cloudflare Workers; no cold start; auto-scaling
+3. **Hono over FastAPI** — Lightweight HTTP framework designed for edge runtimes
 4. **Tiptap over raw contentEditable** — Structured editing with extension system; custom extensions preserve PDF layout attributes
 5. **Server-side zoom** — Rendering at the correct DPI on the server ensures visual fidelity; client-only zoom would require re-rendering the entire PDF
 6. **Font embedding via base64 data URIs** — Self-contained HTML output; no need for font file serving
@@ -316,14 +287,13 @@ The backend requires Poppler utilities (`pdftohtml`) installed on the system.
 
 ## 15. Constraints, Risks, and Technical Debt
 
-- **Hardcoded backend URL** (`localhost:8085`) in `pdfService.ts` — no config mechanism
+- **Hardcoded backend URL** (`localhost:8787`) in `pdfService.ts` — no config mechanism
 - **No auth/rate limiting** — backend is open to any client
 - **CORS wildcard** — documented as temporary
 - **No automated tests** — manual testing only
 - **No CI/CD** — no automated builds, linting, or deployment
-- **Subprocess blocking** — `subprocess.run()` in async handlers blocks the event loop
 - **Print-based logging** — no structured logging, no log levels
-- **Multiple git repos** — `backend/.git/` and `extension/.git/` are independent repos within the monorepo structure
+- **Legacy Python backend** — still exists in `backend/` but deprecated
 - **Options page is empty** — `options.tsx` is a placeholder
 - **Zoom re-uploads entire PDF** — changing zoom triggers a full re-conversion rather than client-side CSS transform
 
@@ -332,22 +302,22 @@ The backend requires Poppler utilities (`pdftohtml`) installed on the system.
 - **Restrict CORS** to specific origins before any public deployment
 - **Add authentication** (API key or session-based) for the upload endpoint
 - **Client-side zoom via CSS transform** — avoid re-upload; only re-convert for print/export
-- **Structured logging** with Python `logging` module
-- **Automated test suite** — pytest for backend, vitest for extension
+- **Structured logging** with TypeScript logging libraries
+- **Automated test suite** — vitest for both frontend and backend
 - **CI/CD pipeline** — GitHub Actions for lint, test, build
-- **Web Worker for pdftohtml** — move subprocess calls off the async event loop
 - **Configurable backend URL** — environment variable or extension options page
 - **Error boundaries** in React components for graceful failure
 - **Progress reporting** for large PDF uploads
+- **Remove legacy Python backend** — once TypeScript backend is fully validated
 
 ## 17. Project Identification
 
 | Field | Value |
 |-------|-------|
 | Name | PDF Editor |
-| Languages | TypeScript (frontend), Python (backend) |
-| Type | Chrome Extension + API Server |
-| Runtime | Browser (Chrome MV3) + Python (FastAPI/uvicorn) |
+| Languages | TypeScript (frontend + backend) |
+| Type | Chrome Extension + Cloudflare Workers |
+| Runtime | Browser (Chrome MV3) + Cloudflare Workers |
 | Date of review | 2026-07-18 |
 | Maintainer | Not specified |
 
