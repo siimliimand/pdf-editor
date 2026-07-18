@@ -1,6 +1,7 @@
 import type {
   VectorElement,
   Element,
+  TextElement,
   TableDefinition,
   TableCell,
 } from '../models/types';
@@ -178,31 +179,52 @@ function hasInternalVerticalLines(
 }
 
 // ---------------------------------------------------------------------------
-// Detection strategies (stubs — delegated to separate modules)
+// Position clustering
+// ---------------------------------------------------------------------------
+
+function clusterPositions(positions: number[], tolerance: number): number[] {
+  if (positions.length === 0) return [];
+  const sorted = [...positions].sort((a, b) => a - b);
+  const clusters: number[][] = [[sorted[0]]];
+  for (let i = 1; i < sorted.length; i++) {
+    const lastCluster = clusters[clusters.length - 1];
+    const lastPos = lastCluster[lastCluster.length - 1];
+    if (sorted[i] - lastPos <= tolerance) {
+      lastCluster.push(sorted[i]);
+    } else {
+      clusters.push([sorted[i]]);
+    }
+  }
+  return clusters.map((c) => c.reduce((a, b) => a + b, 0) / c.length);
+}
+
+// ---------------------------------------------------------------------------
+// Detection strategies
 // ---------------------------------------------------------------------------
 
 function buildGrid(
   cluster: LineCluster,
   relevantVLines: VectorElement[],
 ): { row_positions: number[]; col_positions: number[]; cells: TableCell[] } {
-  const row_positions = [...new Set(cluster.hLines.map((l) => l.y0))].sort(
-    (a, b) => a - b,
+  // Cluster horizontal lines by Y position
+  const hYPositions = cluster.hLines.map((l) => l.y0);
+  const row_positions = clusterPositions(
+    hYPositions,
+    TABLE_DETECTION.LINE_CLUSTER_TOLERANCE,
   );
 
-  const colXFromV = new Set(relevantVLines.map((v) => v.x0));
-  const colXFromH = new Set<number>();
-  for (const l of cluster.hLines) {
-    colXFromH.add(l.x0);
-    colXFromH.add(l.x1);
+  // Cluster vertical lines by X position
+  const vXPositions = relevantVLines.map((v) => v.x0);
+  const col_positions = clusterPositions(
+    vXPositions,
+    TABLE_DETECTION.LINE_CLUSTER_TOLERANCE,
+  );
+
+  if (row_positions.length < 2 || col_positions.length < 2) {
+    return { row_positions, col_positions, cells: [] };
   }
 
-  const allColX = [...colXFromV].concat([...colXFromH]);
-  const col_positions = [...new Set(allColX)].sort((a, b) => a - b);
-
-  if (!col_positions.includes(cluster.left)) col_positions.unshift(cluster.left);
-  if (!col_positions.includes(cluster.right)) col_positions.push(cluster.right);
-  col_positions.sort((a, b) => a - b);
-
+  // Create cells at each grid intersection
   const cells: TableCell[] = [];
   for (let r = 0; r < row_positions.length - 1; r++) {
     for (let c = 0; c < col_positions.length - 1; c++) {
@@ -224,7 +246,57 @@ function mergeCells(
   numRows: number,
   numCols: number,
 ): TableCell[] {
-  return cells.filter((c) => c.row_span > 0 && c.col_span > 0);
+  if (cells.length === 0 || numRows <= 0 || numCols <= 0) return [];
+
+  // Build 2D grid for lookup
+  const grid: (TableCell | null)[][] = Array.from({ length: numRows }, () =>
+    Array.from({ length: numCols }, () => null),
+  );
+
+  for (const cell of cells) {
+    if (
+      cell.row_idx >= 0 &&
+      cell.row_idx < numRows &&
+      cell.col_idx >= 0 &&
+      cell.col_idx < numCols
+    ) {
+      grid[cell.row_idx][cell.col_idx] = cell;
+    }
+  }
+
+  // Merge horizontally: when a cell's right neighbor is missing, extend col_span
+  for (let r = 0; r < numRows; r++) {
+    for (let c = 0; c < numCols; c++) {
+      const cell = grid[r][c];
+      if (!cell) continue;
+      while (c + cell.col_span < numCols && !grid[r][c + cell.col_span]) {
+        cell.col_span++;
+      }
+    }
+  }
+
+  // Merge vertically: when a cell's bottom neighbor is missing, extend row_span
+  for (let c = 0; c < numCols; c++) {
+    for (let r = 0; r < numRows; r++) {
+      const cell = grid[r][c];
+      if (!cell) continue;
+      while (r + cell.row_span < numRows && !grid[r + cell.row_span][c]) {
+        cell.row_span++;
+      }
+    }
+  }
+
+  // Collect non-null cells
+  const result: TableCell[] = [];
+  for (let r = 0; r < numRows; r++) {
+    for (let c = 0; c < numCols; c++) {
+      if (grid[r][c]) {
+        result.push(grid[r][c]!);
+      }
+    }
+  }
+
+  return result;
 }
 
 function detectHorizontalTable(
@@ -233,54 +305,61 @@ function detectHorizontalTable(
 ): TableDefinition | null {
   if (cluster.hLines.length < 2) return null;
 
-  const row_positions = [...new Set(cluster.hLines.map((l) => l.y0))].sort(
-    (a, b) => a - b,
+  // Cluster horizontal lines by Y position
+  const hYPositions = cluster.hLines.map((l) => l.y0);
+  const row_positions = clusterPositions(
+    hYPositions,
+    TABLE_DETECTION.LINE_CLUSTER_TOLERANCE,
   );
 
   if (row_positions.length < 2) return null;
 
-  const PADDING_X = 300;
+  // Collect text elements within the table's Y range
   const MARGIN = 5;
-  const textsInTable: Element[] = [];
-
+  const textsInTable: TextElement[] = [];
   for (const el of textElements) {
     if (el.type !== 'text') continue;
-
-    const vertMatch =
+    if (
       el.top >= row_positions[0] - MARGIN &&
-      el.top <= row_positions[row_positions.length - 1] + MARGIN;
-    const horizMatch =
-      el.left >= cluster.left - PADDING_X &&
-      el.left <= cluster.right + PADDING_X;
-
-    if (vertMatch && horizMatch) {
+      el.top <= row_positions[row_positions.length - 1] + MARGIN
+    ) {
       textsInTable.push(el);
     }
   }
 
   if (textsInTable.length === 0) return null;
 
-  let tableLeft = cluster.left;
-  let tableRight = cluster.right;
-  for (const el of textsInTable) {
-    if (el.type !== 'text') continue;
-    if (el.left < tableLeft) tableLeft = el.left;
-    if (el.left + el.width > tableRight) tableRight = el.left + el.width;
+  // Sort text elements by X position
+  textsInTable.sort((a, b) => a.left - b.left);
+
+  // Infer column boundaries from gaps between text elements
+  const tableLeft = Math.min(
+    cluster.left,
+    ...textsInTable.map((el) => el.left),
+  );
+  const tableRight = Math.max(
+    cluster.right,
+    ...textsInTable.map((el) => el.left + el.width),
+  );
+
+  const col_positions: number[] = [tableLeft];
+
+  for (let i = 0; i < textsInTable.length - 1; i++) {
+    const currentRight = textsInTable[i].left + textsInTable[i].width;
+    const nextLeft = textsInTable[i + 1].left;
+    const gap = nextLeft - currentRight;
+
+    if (gap > TABLE_DETECTION.HORIZONTAL_LINE_GAP_THRESHOLD) {
+      col_positions.push((currentRight + nextLeft) / 2);
+    }
   }
 
-  const colEndpoints = new Set<number>();
-  for (const l of cluster.hLines) {
-    colEndpoints.add(l.x0);
-    colEndpoints.add(l.x1);
-  }
-  const col_positions = [...colEndpoints].sort((a, b) => a - b);
+  col_positions.push(tableRight);
+  col_positions.sort((a, b) => a - b);
 
-  if (col_positions.length <= 2) {
-    return null;
-  }
+  if (col_positions.length < 2) return null;
 
-  if (row_positions.length < 2 || col_positions.length < 2) return null;
-
+  // Build cells
   const cells: TableCell[] = [];
   for (let r = 0; r < row_positions.length - 1; r++) {
     for (let c = 0; c < col_positions.length - 1; c++) {

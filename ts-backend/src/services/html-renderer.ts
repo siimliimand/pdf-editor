@@ -153,6 +153,73 @@ function renderTextElement(
   return `<div style="${styleAttr}">${text}</div>`;
 }
 
+/**
+ * Render a standalone text block with absolute positioning and background color.
+ *
+ * Used for text blocks that appear outside of tables — positioned absolutely
+ * on the page with optional background fill for highlight/annotation effects.
+ *
+ * @param el - The text element to render.
+ * @param zoomLevel - Zoom multiplier.
+ * @param fontMapping - Font ID to CSS family name mapping.
+ * @param backgroundColor - Optional background color for the text block.
+ * @returns HTML string for the positioned text block.
+ */
+export function renderTextBlock(
+  el: TextElement,
+  zoomLevel: number,
+  fontMapping: Map<string, string>,
+  backgroundColor?: string | null,
+): string {
+  const top = scale(el.top, zoomLevel);
+  const left = scale(el.left, zoomLevel);
+  const width = scale(el.width, zoomLevel);
+  const height = scale(el.height, zoomLevel);
+
+  const styles: string[] = [
+    "position: absolute",
+    `top: ${top.toFixed(2)}px`,
+    `left: ${left.toFixed(2)}px`,
+    `width: ${width.toFixed(2)}px`,
+    `height: ${height.toFixed(2)}px`,
+    "overflow: hidden",
+    "white-space: pre-wrap",
+    "line-height: 1.2",
+  ];
+
+  if (backgroundColor) {
+    styles.push(`background-color: ${backgroundColor}`);
+  }
+
+  if (el.font_spec) {
+    const spec = el.font_spec;
+    const family = fontMapping.get(spec.id) || spec.family;
+    const fontSize = scale(spec.size, zoomLevel);
+
+    styles.push(`font-family: '${escapeHtml(family)}', sans-serif`);
+    styles.push(`font-size: ${fontSize.toFixed(2)}px`);
+    styles.push(`color: ${spec.color}`);
+
+    if (spec.is_bold || (spec.font_weight && spec.font_weight >= 700)) {
+      styles.push("font-weight: bold");
+    } else if (spec.font_weight) {
+      styles.push(`font-weight: ${spec.font_weight}`);
+    }
+
+    if (spec.is_italic) {
+      styles.push("font-style: italic");
+    }
+  } else {
+    const fontSize = scale(el.font_size, zoomLevel);
+    styles.push(`font-size: ${fontSize.toFixed(2)}px`);
+  }
+
+  const styleAttr = styles.join("; ");
+  const text = escapeHtml(el.text);
+
+  return `<div style="${styleAttr}">${text}</div>`;
+}
+
 // ---------------------------------------------------------------------------
 // Image rendering
 // ---------------------------------------------------------------------------
@@ -232,36 +299,65 @@ function renderVectorElement(v: VectorElement, zoomLevel: number): string {
 // Table rendering
 // ---------------------------------------------------------------------------
 
+/**
+ * Determine if a table can be rendered as a proper grid table.
+ *
+ * Grid tables use native <table> with <colgroup>. They require regular column
+ * positions and row positions. Tables with irregular or missing positions
+ * should fall back to legacy (absolute-positioned div) rendering.
+ */
+function isGridTable(table: TableDefinition): boolean {
+  if (table.col_positions.length < 2 || table.row_positions.length < 2) {
+    return false;
+  }
+
+  // Check that row_positions are monotonically increasing.
+  for (let i = 1; i < table.row_positions.length; i++) {
+    if (table.row_positions[i] <= table.row_positions[i - 1]) return false;
+  }
+
+  // Check that col_positions are monotonically increasing.
+  for (let i = 1; i < table.col_positions.length; i++) {
+    if (table.col_positions[i] <= table.col_positions[i - 1]) return false;
+  }
+
+  return true;
+}
+
 function renderCell(
   cell: TableCell,
   zoomLevel: number,
   fontMapping: Map<string, string>,
 ): string {
-  const styles: string[] = [];
+  const attrs: string[] = [];
 
+  // HTML rowspan/colspan attributes (not CSS properties).
   if (cell.row_span > 1) {
-    styles.push(`row-span: ${cell.row_span}`);
+    attrs.push(`rowspan="${cell.row_span}"`);
   }
   if (cell.col_span > 1) {
-    styles.push(`col-span: ${cell.col_span}`);
+    attrs.push(`colspan="${cell.col_span}"`);
   }
 
   // Border styles.
-  if (cell.style_top) styles.push(`border-top: ${cell.style_top}`);
-  if (cell.style_bottom) styles.push(`border-bottom: ${cell.style_bottom}`);
-  if (cell.style_left) styles.push(`border-left: ${cell.style_left}`);
-  if (cell.style_right) styles.push(`border-right: ${cell.style_right}`);
+  const borderStyles: string[] = [];
+  if (cell.style_top) borderStyles.push(`border-top: ${cell.style_top}`);
+  if (cell.style_bottom) borderStyles.push(`border-bottom: ${cell.style_bottom}`);
+  if (cell.style_left) borderStyles.push(`border-left: ${cell.style_left}`);
+  if (cell.style_right) borderStyles.push(`border-right: ${cell.style_right}`);
 
   // Background color.
   if (cell.background_color) {
-    styles.push(`background-color: ${cell.background_color}`);
+    borderStyles.push(`background-color: ${cell.background_color}`);
   }
 
   // Vertical alignment for text content.
-  styles.push("vertical-align: top");
-  styles.push("padding: 2px 4px");
+  borderStyles.push("vertical-align: top");
+  borderStyles.push("padding: 2px 4px");
 
-  const styleAttr = styles.length > 0 ? ` style="${styles.join("; ")}"` : "";
+  const styleAttr =
+    borderStyles.length > 0 ? ` style="${borderStyles.join("; ")}"` : "";
+  const attrStr = attrs.length > 0 ? ` ${attrs.join(" ")}` : "";
 
   // Render text elements within the cell.
   const innerContent = cell.text_elements
@@ -276,10 +372,24 @@ function renderCell(
     })
     .join("\n");
 
-  return `<td${styleAttr}>${innerContent}</td>`;
+  return `<td${attrStr}${styleAttr}>${innerContent}</td>`;
 }
 
-function renderTable(
+/**
+ * Render a table as a proper grid using <table>, <colgroup>, and <col>.
+ *
+ * Produces a positioned container div with:
+ * - <colgroup> with <col> elements sized from col_positions
+ * - <tr> rows built from row_positions
+ * - <td> cells with colspan/rowspan, border styles, and background colors
+ * - data-col-widths attribute for frontend JS consumption
+ *
+ * @param table - The table definition to render.
+ * @param zoomLevel - Zoom multiplier.
+ * @param fontMapping - Font ID to CSS family name mapping.
+ * @returns HTML string for the grid table.
+ */
+export function renderGridTable(
   table: TableDefinition,
   zoomLevel: number,
   fontMapping: Map<string, string>,
@@ -337,7 +447,6 @@ function renderTable(
       if (cell) {
         cells.push(renderCell(cell, zoomLevel, fontMapping));
       } else {
-        // Empty cell placeholder.
         cells.push("<td></td>");
       }
     }
@@ -355,6 +464,148 @@ function renderTable(
     `    </table>\n` +
     `  </div>`
   );
+}
+
+/**
+ * Render a table using legacy absolute-positioned divs (no <table> element).
+ *
+ * Used for tables that can't be rendered as proper grids — e.g., tables with
+ * irregular positioning, merged cells that don't align to a grid, or tables
+ * extracted from non-tabular layouts. Each cell becomes an absolutely positioned
+ * div within a container.
+ *
+ * @param table - The table definition to render.
+ * @param zoomLevel - Zoom multiplier.
+ * @param fontMapping - Font ID to CSS family name mapping.
+ * @returns HTML string for the legacy table.
+ */
+export function renderLegacyTable(
+  table: TableDefinition,
+  zoomLevel: number,
+  fontMapping: Map<string, string>,
+): string {
+  const top = scale(table.rect.top, zoomLevel);
+  const left = scale(table.rect.left, zoomLevel);
+  const width = scale(table.rect.right - table.rect.left, zoomLevel);
+  const height = scale(table.rect.bottom - table.rect.top, zoomLevel);
+
+  const containerStyles = [
+    "position: absolute",
+    `top: ${top.toFixed(2)}px`,
+    `left: ${left.toFixed(2)}px`,
+    `width: ${width.toFixed(2)}px`,
+    `height: ${height.toFixed(2)}px`,
+  ];
+
+  const renderedCells: string[] = [];
+
+  for (const cell of table.cells) {
+    // Compute cell position from row/col indices and positions.
+    const cellTop =
+      cell.row_idx < table.row_positions.length
+        ? table.row_positions[cell.row_idx]
+        : table.rect.top;
+    const cellLeft =
+      cell.col_idx < table.col_positions.length
+        ? table.col_positions[cell.col_idx]
+        : table.rect.left;
+
+    // Compute cell dimensions from spans.
+    let cellHeight = scale(
+      table.rect.bottom - cellTop,
+      zoomLevel,
+    );
+    if (cell.row_span > 0) {
+      const endRowIdx = Math.min(
+        cell.row_idx + cell.row_span,
+        table.row_positions.length,
+      );
+      const endRowPos =
+        endRowIdx < table.row_positions.length
+          ? table.row_positions[endRowIdx]
+          : table.rect.bottom;
+      cellHeight = scale(endRowPos - cellTop, zoomLevel);
+    }
+
+    let cellWidth = scale(
+      table.rect.right - cellLeft,
+      zoomLevel,
+    );
+    if (cell.col_span > 0) {
+      const endColIdx = Math.min(
+        cell.col_idx + cell.col_span,
+        table.col_positions.length,
+      );
+      const endColPos =
+        endColIdx < table.col_positions.length
+          ? table.col_positions[endColIdx]
+          : table.rect.right;
+      cellWidth = scale(endColPos - cellLeft, zoomLevel);
+    }
+
+    const cellStyles: string[] = [
+      "position: absolute",
+      `top: ${scale(cellTop, zoomLevel).toFixed(2)}px`,
+      `left: ${scale(cellLeft, zoomLevel).toFixed(2)}px`,
+      `width: ${cellWidth.toFixed(2)}px`,
+      `height: ${cellHeight.toFixed(2)}px`,
+      "padding: 2px 4px",
+      "overflow: hidden",
+    ];
+
+    // Border styles.
+    if (cell.style_top) cellStyles.push(`border-top: ${cell.style_top}`);
+    if (cell.style_bottom) cellStyles.push(`border-bottom: ${cell.style_bottom}`);
+    if (cell.style_left) cellStyles.push(`border-left: ${cell.style_left}`);
+    if (cell.style_right) cellStyles.push(`border-right: ${cell.style_right}`);
+
+    // Background color.
+    if (cell.background_color) {
+      cellStyles.push(`background-color: ${cell.background_color}`);
+    }
+
+    // Render text elements within the cell.
+    const innerContent = cell.text_elements
+      .map((el) => {
+        if (el.type === "text") {
+          return renderTextElement(el, zoomLevel, fontMapping);
+        }
+        if (el.type === "image") {
+          return renderImageElement(el, zoomLevel);
+        }
+        return "";
+      })
+      .join("\n");
+
+    renderedCells.push(
+      `<div style="${cellStyles.join("; ")}">${innerContent}</div>`,
+    );
+  }
+
+  return (
+    `<div style="${containerStyles.join("; ")}">\n` +
+    `    ${renderedCells.join("\n    ")}\n` +
+    `  </div>`
+  );
+}
+
+/**
+ * Render a table — delegates to grid or legacy based on table structure.
+ *
+ * @param table - The table definition to render.
+ * @param zoomLevel - Zoom multiplier.
+ * @param fontMapping - Font ID to CSS family name mapping.
+ * @returns HTML string for the table.
+ */
+function renderTable(
+  table: TableDefinition,
+  zoomLevel: number,
+  fontMapping: Map<string, string>,
+): string {
+  if (isGridTable(table)) {
+    return renderGridTable(table, zoomLevel, fontMapping);
+  }
+  return renderLegacyTable(table, zoomLevel, fontMapping);
 }
 
 // ---------------------------------------------------------------------------

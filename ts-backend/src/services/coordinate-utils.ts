@@ -1,4 +1,4 @@
-import type { VectorElement } from './vector-parser';
+import type { VectorElement } from '../models/types';
 
 const ZOOM = {
   PDF_POINT_TO_CSS_PX: 96 / 72,
