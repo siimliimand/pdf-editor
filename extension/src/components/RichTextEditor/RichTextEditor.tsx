@@ -12,54 +12,51 @@ interface RichTextEditorProps {
  * Extract the body content from a full HTML document.
  * If the content is a full HTML document (has <html>/<body> tags), extract just the body content.
  * If it's already an HTML fragment, return as-is.
+ * Also injects inline width/height on page-container divs from the CSS.
  */
 function extractBodyContent(html: string): string {
-  // Check if this is a full HTML document
-  const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-  if (bodyMatch) {
-    return bodyMatch[1].trim();
-  }
-  // If no body tag, return the original content (it's already a fragment)
-  return html;
-}
-
-/**
- * Extract CSS styles and page dimensions from the HTML content.
- */
-function extractStylesAndDimensions(html: string) {
-  const styleTags = html.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) || [];
-  const styles = styleTags.map(tag => {
-    const match = tag.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
-    return match ? match[1] : '';
-  }).join('\n');
-
-  // Extract page dimensions from .page-container CSS
+  // Extract page dimensions from CSS first
   let pageWidth = 0;
   let pageHeight = 0;
-  const widthMatch = styles.match(/\.page-container\s*\{[\s\S]*?width:\s*([\d.]+)px/);
-  const heightMatch = styles.match(/\.page-container\s*\{[\s\S]*?height:\s*([\d.]+)px/);
+  const widthMatch = html.match(/\.page-container\s*\{[\s\S]*?width:\s*([\d.]+)px/);
+  const heightMatch = html.match(/\.page-container\s*\{[\s\S]*?height:\s*([\d.]+)px/);
   if (widthMatch) pageWidth = parseFloat(widthMatch[1]);
   if (heightMatch) pageHeight = parseFloat(heightMatch[1]);
 
-  return { styles, pageWidth, pageHeight };
+  // Check if this is a full HTML document
+  const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  let bodyContent = bodyMatch ? bodyMatch[1].trim() : html;
+
+  // Inject inline dimensions on page-container divs if we found them in CSS
+  if (pageWidth > 0 && pageHeight > 0) {
+    bodyContent = bodyContent.replace(
+      /(<div\s+class="page-container")/g,
+      `$1 style="width: ${pageWidth}px; height: ${pageHeight}px; position: relative; overflow: hidden; background: white;"`
+    );
+  }
+
+  return bodyContent;
+}
+
+/**
+ * Extract CSS styles from the HTML content (without dimensions, those go inline).
+ */
+function extractStyles(html: string) {
+  const styleTags = html.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) || [];
+  return styleTags.map(tag => {
+    const match = tag.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+    return match ? match[1] : '';
+  }).join('\n');
 }
 
 const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onUpdate }) => {
 
-  // Extract body content, styles, and page dimensions from the HTML
-  const { bodyContent, styles, pageWidth, pageHeight } = useMemo(() => {
+  // Extract body content and styles from the HTML
+  const { bodyContent, styles } = useMemo(() => {
     const bodyContent = extractBodyContent(content);
-    const { styles, pageWidth, pageHeight } = extractStylesAndDimensions(content);
-    return { bodyContent, styles, pageWidth, pageHeight };
+    const styles = extractStyles(content);
+    return { bodyContent, styles };
   }, [content]);
-
-  // Build inline style for page-container to ensure dimensions are preserved
-  const pageContainerStyle = useMemo(() => {
-    if (pageWidth > 0 && pageHeight > 0) {
-      return `width: ${pageWidth}px; height: ${pageHeight}px;`;
-    }
-    return '';
-  }, [pageWidth, pageHeight]);
 
   const editor = useEditor({
     extensions: getExtensions(),
@@ -118,12 +115,11 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onUpdate }) =>
                 width: fit-content;
                 min-width: 100%;
             }
-            /* Page container styling */
+            /* Page container styling - dimensions are now inline */
             .page-container {
                 margin: 0 auto !important;
                 background: white;
                 box-shadow: 0 0 10px rgba(0,0,0,0.1);
-                ${pageContainerStyle}
             }
             /* Center the PDF page div and ensure it can grow beyond viewport */
             div[id^="page"] {
