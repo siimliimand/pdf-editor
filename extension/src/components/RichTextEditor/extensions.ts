@@ -99,6 +99,48 @@ export const ExtendedParagraph = Node.create({
     }
 });
 
+// Custom SVG extension to preserve PDF vector graphics (lines, borders)
+export const Svg = Node.create({
+  name: 'svg',
+  group: 'block',
+  atom: true,
+  selectable: false,
+  draggable: false,
+
+  parseHTML() {
+    return [{ tag: 'svg' }];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    // Preserve all SVG attributes and content
+    return ['svg', mergeAttributes(HTMLAttributes), 0];
+  },
+
+  addAttributes() {
+    return {
+      xmlns: {
+        default: 'http://www.w3.org/2000/svg',
+      },
+      width: {
+        default: null,
+        parseHTML: element => element.getAttribute('width'),
+      },
+      height: {
+        default: null,
+        parseHTML: element => element.getAttribute('height'),
+      },
+      viewBox: {
+        default: null,
+        parseHTML: element => element.getAttribute('viewBox'),
+      },
+      style: {
+        default: null,
+        parseHTML: element => element.getAttribute('style'),
+      },
+    };
+  },
+});
+
 export const getExtensions = () => [
   StarterKit.configure({
     // Disable default paragraph to use our extended one
@@ -108,6 +150,7 @@ export const getExtensions = () => [
   Div,
   Span,
   ExtendedParagraph,
+  Svg,
   Image.extend({
     addAttributes() {
       return {

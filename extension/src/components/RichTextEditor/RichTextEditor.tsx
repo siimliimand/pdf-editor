@@ -8,22 +8,62 @@ interface RichTextEditorProps {
   onUpdate?: (html: string) => void;
 }
 
+/**
+ * Extract the body content from a full HTML document.
+ * If the content is a full HTML document (has <html>/<body> tags), extract just the body content.
+ * If it's already an HTML fragment, return as-is.
+ */
+function extractBodyContent(html: string): string {
+  // Check if this is a full HTML document
+  const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  if (bodyMatch) {
+    return bodyMatch[1].trim();
+  }
+  // If no body tag, return the original content (it's already a fragment)
+  return html;
+}
+
+/**
+ * Extract CSS styles and page dimensions from the HTML content.
+ */
+function extractStylesAndDimensions(html: string) {
+  const styleTags = html.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) || [];
+  const styles = styleTags.map(tag => {
+    const match = tag.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+    return match ? match[1] : '';
+  }).join('\n');
+
+  // Extract page dimensions from .page-container CSS
+  let pageWidth = 0;
+  let pageHeight = 0;
+  const widthMatch = styles.match(/\.page-container\s*\{[^}]*width:\s*([\d.]+)px/);
+  const heightMatch = styles.match(/\.page-container\s*\{[^}]*height:\s*([\d.]+)px/);
+  if (widthMatch) pageWidth = parseFloat(widthMatch[1]);
+  if (heightMatch) pageHeight = parseFloat(heightMatch[1]);
+
+  return { styles, pageWidth, pageHeight };
+}
+
 const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onUpdate }) => {
 
-  // Extract PDF styles (CSS) from the HTML content
-  const styles = useMemo(() => {
-    const styleTags = content.match(/<style[^>]*>([\s\S]*?)<\/style>/gi);
-    if (!styleTags) return '';
-
-    return styleTags.map(tag => {
-        const match = tag.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
-        return match ? match[1] : '';
-    }).join('\n');
+  // Extract body content, styles, and page dimensions from the HTML
+  const { bodyContent, styles, pageWidth, pageHeight } = useMemo(() => {
+    const bodyContent = extractBodyContent(content);
+    const { styles, pageWidth, pageHeight } = extractStylesAndDimensions(content);
+    return { bodyContent, styles, pageWidth, pageHeight };
   }, [content]);
+
+  // Build inline style for page-container to ensure dimensions are preserved
+  const pageContainerStyle = useMemo(() => {
+    if (pageWidth > 0 && pageHeight > 0) {
+      return `width: ${pageWidth}px; height: ${pageHeight}px;`;
+    }
+    return '';
+  }, [pageWidth, pageHeight]);
 
   const editor = useEditor({
     extensions: getExtensions(),
-    content: content,
+    content: bodyContent,
     onUpdate: ({ editor }) => {
       onUpdate?.(editor.getHTML());
     },
@@ -73,28 +113,31 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onUpdate }) =>
             .ProseMirror {
                 outline: none;
                 min-height: 100%;
-                background: #ccc;
+                background: transparent;
                 padding: 0;
-                width: fit-content; /* Allow ProseMirror to grow with content */
-                min-width: 100%; /* But at least fill the container */
+                width: fit-content;
+                min-width: 100%;
+            }
+            /* Page container styling */
+            .page-container {
+                margin: 0 auto !important;
+                background: white;
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                ${pageContainerStyle}
             }
             /* Center the PDF page div and ensure it can grow beyond viewport */
             div[id^="page"] {
                 margin: 0 auto !important;
                 background: white;
-                max-width: none !important; /* Prevent any max-width constraint */
-                /* Don't override width - let inline styles from backend work */
+                max-width: none !important;
             }
             /* Minimal table styles - let backend dynamic styles take precedence */
             .ProseMirror table {
                 border-collapse: collapse;
                 table-layout: fixed;
                 margin: 0;
-                /* Remove static width to allow natural sizing */
             }
             .ProseMirror td, .ProseMirror th {
-                /* Removed min-width - let backend control column widths via colgroup */
-                /* Remove static borders and padding - use inline styles from backend */
                 vertical-align: top;
             }
          `}</style>
