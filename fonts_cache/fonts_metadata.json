@@ -1,0 +1,209 @@
+{
+  "BAAAAAMontserrat-SemiBold": {
+    "name": "BAAAAA+Montserrat-SemiBold",
+    "hash": "f93be34d5be69623",
+    "css_file": "BAAAAAMontserrat-SemiBold.css",
+    "weight": 600,
+    "style": "normal",
+    "family": "BAAAAA+Montserrat",
+    "ext": "ttf"
+  },
+  "CAAAAAMontserrat-SemiBold": {
+    "name": "CAAAAA+Montserrat-SemiBold",
+    "hash": "eefdf6ee5083746e",
+    "css_file": "CAAAAAMontserrat-SemiBold.css",
+    "weight": 600,
+    "style": "normal",
+    "family": "CAAAAA+Montserrat",
+    "ext": "ttf"
+  },
+  "AAAAAAMontserrat-ExtraBold": {
+    "name": "AAAAAA+Montserrat-ExtraBold",
+    "hash": "0937fc7aead70264",
+    "css_file": "AAAAAAMontserrat-ExtraBold.css",
+    "weight": 800,
+    "style": "normal",
+    "family": "AAAAAA+Montserrat",
+    "ext": "ttf"
+  },
+  "OLCICWMontserrat-ExtraBold": {
+    "name": "OLCICW+Montserrat-ExtraBold",
+    "hash": "2e4a7c573efa0968",
+    "css_file": "OLCICWMontserrat-ExtraBold.css",
+    "weight": 800,
+    "style": "normal",
+    "family": "OLCICW+Montserrat",
+    "ext": "cff"
+  },
+  "UMBXIKMontserrat-Regular": {
+    "name": "UMBXIK+Montserrat-Regular",
+    "hash": "55c2c252fa206586",
+    "css_file": "UMBXIKMontserrat-Regular.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "UMBXIK+Montserrat",
+    "ext": "ttf"
+  },
+  "BHQNCWMontserrat-Bold": {
+    "name": "BHQNCW+Montserrat-Bold",
+    "hash": "ccae0a076ed4beb4",
+    "css_file": "BHQNCWMontserrat-Bold.css",
+    "weight": 700,
+    "style": "normal",
+    "family": "BHQNCW+Montserrat",
+    "ext": "ttf"
+  },
+  "IXAYWICambria": {
+    "name": "IXAYWI+Cambria",
+    "hash": "0b9d00868c497d9c",
+    "css_file": "IXAYWICambria.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "IXAYWI+Cambria",
+    "ext": "ttf"
+  },
+  "FAQLGOMontserrat-Regular": {
+    "name": "FAQLGO+Montserrat-Regular",
+    "hash": "3a8bdcdf56e346ef",
+    "css_file": "FAQLGOMontserrat-Regular.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "FAQLGO+Montserrat",
+    "ext": "ttf"
+  },
+  "FVMGGOMontserrat-Italic": {
+    "name": "FVMGGO+Montserrat-Italic",
+    "hash": "c76a6fb9e54b6518",
+    "css_file": "FVMGGOMontserrat-Italic.css",
+    "weight": 400,
+    "style": "italic",
+    "family": "FVMGGO+Montserrat",
+    "ext": "ttf"
+  },
+  "TYNMUMArialMT": {
+    "name": "TYNMUM+ArialMT",
+    "hash": "d88210aeecef7c2f",
+    "css_file": "TYNMUMArialMT.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "TYNMUM+ArialMT",
+    "ext": "ttf"
+  },
+  "PSPOQUTimesNewRomanPSMT": {
+    "name": "PSPOQU+TimesNewRomanPSMT",
+    "hash": "dbb2bf4b17da4b1d",
+    "css_file": "PSPOQUTimesNewRomanPSMT.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "PSPOQU+TimesNewRomanPSMT",
+    "ext": "ttf"
+  },
+  "MQBWAAArial-BoldMT": {
+    "name": "MQBWAA+Arial-BoldMT",
+    "hash": "8ff375ced6fa1aca",
+    "css_file": "MQBWAAArial-BoldMT.css",
+    "weight": 700,
+    "style": "normal",
+    "family": "MQBWAA+Arial",
+    "ext": "ttf"
+  },
+  "MIDWAACambria": {
+    "name": "MIDWAA+Cambria",
+    "hash": "993c48242ddd73ad",
+    "css_file": "MIDWAACambria.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "MIDWAA+Cambria",
+    "ext": "ttf"
+  },
+  "JJNEKGCambria-Italic": {
+    "name": "JJNEKG+Cambria-Italic",
+    "hash": "20ea80a56ab83ad4",
+    "css_file": "JJNEKGCambria-Italic.css",
+    "weight": 400,
+    "style": "italic",
+    "family": "JJNEKG+Cambria",
+    "ext": "ttf"
+  },
+  "GHZMUMCambria-Italic": {
+    "name": "GHZMUM+Cambria-Italic",
+    "hash": "f4ff007a3797e82e",
+    "css_file": "GHZMUMCambria-Italic.css",
+    "weight": 400,
+    "style": "italic",
+    "family": "GHZMUM+Cambria",
+    "ext": "ttf"
+  },
+  "EEAASQSymbolMT": {
+    "name": "EEAASQ+SymbolMT",
+    "hash": "f3142ceb84fb38a0",
+    "css_file": "EEAASQSymbolMT.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "EEAASQ+SymbolMT",
+    "ext": "ttf"
+  },
+  "CWBOQUTimesNewRomanPS-BoldMT": {
+    "name": "CWBOQU+TimesNewRomanPS-BoldMT",
+    "hash": "0740d6ba11f1e650",
+    "css_file": "CWBOQUTimesNewRomanPS-BoldMT.css",
+    "weight": 700,
+    "style": "normal",
+    "family": "CWBOQU+TimesNewRomanPS",
+    "ext": "ttf"
+  },
+  "DKPZESMontserrat-Bold": {
+    "name": "DKPZES+Montserrat-Bold",
+    "hash": "d198ce0defb672a9",
+    "css_file": "DKPZESMontserrat-Bold.css",
+    "weight": 700,
+    "style": "normal",
+    "family": "DKPZES+Montserrat",
+    "ext": "ttf"
+  },
+  "YQYQMCCourierNewPSMT": {
+    "name": "YQYQMC+CourierNewPSMT",
+    "hash": "721c48b8bc8bb2c2",
+    "css_file": "YQYQMCCourierNewPSMT.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "YQYQMC+CourierNewPSMT",
+    "ext": "ttf"
+  },
+  "UKANIKCalibri-Bold": {
+    "name": "UKANIK+Calibri-Bold",
+    "hash": "b00c41f2da699049",
+    "css_file": "UKANIKCalibri-Bold.css",
+    "weight": 700,
+    "style": "normal",
+    "family": "UKANIK+Calibri",
+    "ext": "ttf"
+  },
+  "QEXPESCalibri": {
+    "name": "QEXPES+Calibri",
+    "hash": "3fe0d27b1ba5f3d5",
+    "css_file": "QEXPESCalibri.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "QEXPES+Calibri",
+    "ext": "ttf"
+  },
+  "BFKDCWSegoeUI": {
+    "name": "BFKDCW+SegoeUI",
+    "hash": "07cfcdc8cfa29048",
+    "css_file": "BFKDCWSegoeUI.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "BFKDCW+SegoeUI",
+    "ext": "ttf"
+  },
+  "YDWLMCMontserrat-BoldItalic": {
+    "name": "YDWLMC+Montserrat-BoldItalic",
+    "hash": "4271a0ec1f67a37a",
+    "css_file": "YDWLMCMontserrat-BoldItalic.css",
+    "weight": 700,
+    "style": "italic",
+    "family": "YDWLMC+Montserrat",
+    "ext": "ttf"
+  }
+}
