@@ -1,10 +1,16 @@
+---
+version: 1.0.0
+lastReviewed: 2026-07-18
+status: validated
+---
+
 ## ADDED Requirements
 
 ### Requirement: PDF file upload endpoint
 The system SHALL provide a POST /upload endpoint that accepts PDF files and returns semantic HTML representation.
 
 #### Scenario: Successful PDF upload
-- **WHEN** client sends a multipart/form-data POST request to /upload with a valid PDF file and zoom parameter
+- **WHEN** client sends a multipart/form-data POST request to /upload with a valid PDF file and zoom parameter (as percentage, e.g. 100 = 100%)
 - **THEN** system returns JSON response with html field containing semantic HTML representation of the PDF
 
 #### Scenario: Invalid file type
@@ -13,7 +19,11 @@ The system SHALL provide a POST /upload endpoint that accepts PDF files and retu
 
 #### Scenario: Missing zoom parameter
 - **WHEN** client sends a POST request to /upload without zoom parameter
-- **THEN** system uses default zoom value of 1.0
+- **THEN** system uses default zoom value of 100 (percentage)
+
+#### Scenario: Invalid zoom value
+- **WHEN** client sends a POST request to /upload with zoom value outside 50-500 range
+- **THEN** system uses default zoom value of 100 (percentage)
 
 ### Requirement: PDF to HTML conversion pipeline
 The system SHALL convert PDF files to semantic HTML through a multi-step pipeline.
@@ -33,8 +43,8 @@ The system SHALL convert PDF files to semantic HTML through a multi-step pipelin
   10. Cleans up temporary files
 
 #### Scenario: Zoom level handling
-- **WHEN** system receives a zoom parameter
-- **THEN** system calculates DPI scaling factor (72pt to 96px conversion) and caps at 3.0x maximum
+- **WHEN** system receives a zoom parameter (as percentage, e.g. 100 = 100%)
+- **THEN** system calculates DPI scaling factor (percentage to 96px conversion) and caps at 3.0x maximum
 
 #### Scenario: Table detection at non-standard zoom
 - **WHEN** zoom level is not 1.0
