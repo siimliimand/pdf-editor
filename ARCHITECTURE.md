@@ -365,4 +365,61 @@ The backend requires Poppler utilities (`pdftohtml`) installed on the system.
 | **DPI conversion** | PDF points (72 DPI) to CSS pixels (96 DPI) scaling factor |
 | **XML parser** | The `xml_parser` module that converts pdftohtml XML output to semantic HTML |
 
+## 19. OpenSpec Specifications
+
+The project maintains formal OpenSpec specifications in `openspec/changes/document-existing-architecture/specs/`. These specifications document the existing implementation and serve as a baseline for future development.
+
+### Specification Index
+
+| Specification | Location | Scope |
+|---------------|----------|-------|
+| pdf-upload-conversion | `specs/pdf-upload-conversion/spec.md` | POST /upload endpoint, PDF→HTML conversion pipeline, temp file management |
+| font-extraction-embedding | `specs/font-extraction-embedding/spec.md` | Font extraction via PyMuPDF, caching, @font-face CSS generation |
+| image-extraction | `specs/image-extraction/spec.md` | Image extraction via PyMuPDF render-crop, base64 embedding |
+| vector-graphics-parsing | `specs/vector-graphics-parsing/spec.md` | Vector element parsing via pdfminer.six, SVG/CSS rendering |
+| table-detection | `specs/table-detection/spec.md` | Table structure detection, line clustering, cell merging |
+| rich-text-editing | `specs/rich-text-editing/spec.md` | Tiptap editor integration, custom extensions, toolbar |
+| chrome-extension-integration | `specs/chrome-extension-integration/spec.md` | Chrome MV3 manifest, service worker, storage API |
+
+### Specification Format
+
+Each specification follows the OpenSpec format with:
+- **ADDED Requirements**: Requirements added by this change
+- **Scenarios**: Given/When/Then scenarios for each requirement
+- **Test Cases**: executable or descriptive test cases
+
+### Specification Maintenance
+
+Specifications are maintained alongside code. When modifying functionality:
+1. Update the relevant specification to reflect changes
+2. Add new scenarios for new behaviors
+3. Update existing scenarios for changed behaviors
+4. Review cross-references in ARCHITECTURE.md
+
+### Specification Review Process
+
+**When to review:**
+- Before merging PRs that modify spec-covered functionality
+- When adding new features that extend existing capabilities
+- During quarterly documentation audits
+- When onboarding new team members
+
+**Review steps:**
+1. Read the specification and compare to current code implementation
+2. Verify all scenarios are still accurate and complete
+3. Check that API contracts match actual endpoint behavior
+4. Validate data flow descriptions against actual pipelines
+5. Update version number and lastReviewed date in frontmatter
+6. Update cross-reference document if code structure changed
+
+**Version bumping:**
+- **Patch (1.0.x)**: Minor scenario updates, typo fixes, clarification
+- **Minor (1.x.0)**: New scenarios added, requirements clarified
+- **Major (x.0.0)**: Fundamental changes to requirements or scope
+
+**Tools:**
+- `openspec status --change "<name>" --json` for change status
+- `SPEC_CODE_CROSSREF.md` for code mapping
+- Git history for specification changes
+
 <!-- Last updated: 2026-07-18T00:00:00Z -->

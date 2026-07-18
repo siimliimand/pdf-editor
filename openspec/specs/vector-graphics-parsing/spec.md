@@ -1,3 +1,9 @@
+---
+version: 1.0.0
+lastReviewed: 2026-07-18
+status: validated
+---
+
 ## ADDED Requirements
 
 ### Requirement: Vector element parsing
