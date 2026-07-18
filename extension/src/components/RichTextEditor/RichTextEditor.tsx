@@ -36,8 +36,8 @@ function extractStylesAndDimensions(html: string) {
   // Extract page dimensions from .page-container CSS
   let pageWidth = 0;
   let pageHeight = 0;
-  const widthMatch = styles.match(/\.page-container\s*\{[^}]*width:\s*([\d.]+)px/);
-  const heightMatch = styles.match(/\.page-container\s*\{[^}]*height:\s*([\d.]+)px/);
+  const widthMatch = styles.match(/\.page-container\s*\{[\s\S]*?width:\s*([\d.]+)px/);
+  const heightMatch = styles.match(/\.page-container\s*\{[\s\S]*?height:\s*([\d.]+)px/);
   if (widthMatch) pageWidth = parseFloat(widthMatch[1]);
   if (heightMatch) pageHeight = parseFloat(heightMatch[1]);
 

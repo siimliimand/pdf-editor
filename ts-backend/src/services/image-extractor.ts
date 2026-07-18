@@ -17,6 +17,8 @@
  *     uses the Workers-native `CompressionStream` API.
  */
 
+import "../pdfjs-compat";
+
 import { OPS } from 'pdfjs-dist';
 import type { PDFPageProxy } from 'pdfjs-dist';
 import type { ExtractedImage } from './pdf-service';
