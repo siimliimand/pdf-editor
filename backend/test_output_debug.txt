@@ -1,0 +1,89 @@
+================================================================================
+Elisa Invoice Test - second-page.pdf
+================================================================================
+
+Processing PDF...
+Consider using the pymupdf_layout package for a greatly improved page layout analysis.
+[GRID TABLE] Rendering table with width=684.0933333333334px, left=56.69199999999999px, cols=7
+HTML saved to: temp/second-page-test-output.html
+
+================================================================================
+Test: Border Count
+================================================================================
+
+Border counts:
+  border-top: 8
+  border-bottom: 119
+✓ Border count matches PDF (borders at every row)
+✓ PASSED
+
+================================================================================
+Test: Subtitle Has Borders
+================================================================================
+
+Subtitle element: span
+Parent element: td
+Border-top: 1px solid #888888
+Border-bottom: 1px solid #888888
+✓ Subtitle has proper borders
+✓ PASSED
+
+================================================================================
+Test: Mobiiltelefon Row Border
+================================================================================
+
+Found Mobiiltelefon cell: 'Mobiiltelefon: 55526556| SeoWeb OÜ | Pakett: Äripa...'
+Border-bottom: 1px solid #888888
+✓ Mobiiltelefon header has proper border
+✓ PASSED
+
+================================================================================
+Test: Kokku Row Borders
+================================================================================
+
+Found 2 'Kokku' cells
+  Kokku #1: top=None, bottom=1px solid #888888
+  Kokku #2: top=None, bottom=1px solid #888888
+✓ PASSED
+
+================================================================================
+Test: Lines Validated With Tests
+================================================================================
+✓ 'Paketis sisalduvad teenused' has border (matching PDF)
+✓ 'Kõned mobiilidele' has border (matching PDF)
+✓ 'Kuutasud' has border (matching PDF)
+✓ PASSED
+
+================================================================================
+Test: Border Y Positions
+================================================================================
+
+Table found at top=117.98733333333332
+Found 18 borders. Checking expected 8 positions...
+Actual API Border Ys: [117.98733333333332, 133.43266666666673, 165.4060000000001, 178.72733333333326, 192.2373333333333, 205.74644444444448, 219.25577777777772, 232.76533333333327, 249.38777777777779, 262.89733333333334, 298.65133333333335, 311.9726666666666, 325.4826666666666, 338.99177777777777, 352.50133333333326, 366.01044444444443, 382.6331111111111, 396.1426666666666]
+✓ Found border at 298.0 (actual: 298.7)
+Traceback (most recent call last):
+  File "/home/sim/www/Extensions/PDF-editor/backend/tests/test_elisa_invoice.py", line 530, in <module>
+    asyncio.run(run_manual_test())
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/home/sim/www/Extensions/PDF-editor/backend/tests/test_elisa_invoice.py", line 517, in run_manual_test
+    await test_func(html_content)
+  File "/home/sim/www/Extensions/PDF-editor/backend/tests/test_elisa_invoice.py", line 338, in test_border_positions
+    pytest.fail("\n".join(failures))
+  File "/home/sim/www/Extensions/PDF-editor/backend/venv/lib/python3.12/site-packages/_pytest/outcomes.py", line 163, in __call__
+    raise Failed(msg=reason, pytrace=pytrace)
+Failed: Missing border at 89.4 (nearest found: 118.0, diff: 28.59)
+Missing border at 101.0 (nearest found: 118.0, diff: 16.99)
+Missing border at 120.0 (nearest found: 118.0, diff: 2.01)
+Missing border at 187.9 (nearest found: 192.2, diff: 4.34)
+Missing border at 198.1 (nearest found: 192.2, diff: 5.86)
+Missing border at 224.9 (nearest found: 219.3, diff: 5.64)
+Missing border at 287.9 (nearest found: 298.7, diff: 10.75)

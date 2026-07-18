@@ -1,0 +1,138 @@
+================================================================================
+Elisa Invoice Test - second-page.pdf
+================================================================================
+
+Processing PDF...
+Consider using the pymupdf_layout package for a greatly improved page layout analysis.
+[GRID TABLE] Rendering table with width=684.0933333333334px, left=56.69199999999999px, cols=7
+HTML saved to: temp/second-page-test-output.html
+
+================================================================================
+Test: Border Count
+================================================================================
+
+Border counts:
+  border-top: 8
+  border-bottom: 119
+✓ Border count matches PDF (borders at every row)
+✓ PASSED
+
+================================================================================
+Test: Subtitle Has Borders
+================================================================================
+
+Subtitle element: span
+Parent element: td
+Border-top: 1px solid #888888
+Border-bottom: 1px solid #888888
+✓ Subtitle has proper borders
+✓ PASSED
+
+================================================================================
+Test: Mobiiltelefon Row Border
+================================================================================
+
+Found Mobiiltelefon cell: 'Mobiiltelefon: 55526556| SeoWeb OÜ | Pakett: Äripa...'
+Border-bottom: 1px solid #888888
+✓ Mobiiltelefon header has proper border
+✓ PASSED
+
+================================================================================
+Test: Kokku Row Borders
+================================================================================
+
+Found 2 'Kokku' cells
+  Kokku #1: top=None, bottom=1px solid #888888
+  Kokku #2: top=None, bottom=1px solid #888888
+✓ PASSED
+
+================================================================================
+Test: Lines Validated With Tests
+================================================================================
+✓ 'Paketis sisalduvad teenused' has border (matching PDF)
+✓ 'Kõned mobiilidele' has border (matching PDF)
+✓ 'Kuutasud' has border (matching PDF)
+✓ PASSED
+
+================================================================================
+Test: Border Y Positions
+================================================================================
+
+Table found at top=117.98733333333332
+Found 18 borders. Checking expected 8 positions...
+Actual API Border Ys: [117.98733333333332, 133.43266666666673, 165.4060000000001, 178.72733333333326, 192.2373333333333, 205.74644444444448, 219.25577777777772, 232.76533333333327, 249.38777777777779, 262.89733333333334, 298.65133333333335, 311.9726666666666, 325.4826666666666, 338.99177777777777, 352.50133333333326, 366.01044444444443, 382.6331111111111, 396.1426666666666]
+✓ Found border at 117.9 (actual: 118.0)
+✓ Found border at 133.4 (actual: 133.4)
+✓ Found border at 165.4 (actual: 165.4)
+✓ Found border at 249.4 (actual: 249.4)
+✓ Found border at 262.9 (actual: 262.9)
+✓ Found border at 298.6 (actual: 298.7)
+✓ Found border at 382.6 (actual: 382.6)
+✓ Found border at 396.1 (actual: 396.1)
+✓ PASSED
+
+================================================================================
+Test: Title Font
+================================================================================
+
+Title 'Elisa arve alajaotus':
+  font-size: 24.0px (expected: 24px)
+  font-weight: 400 (expected: 400)
+✓ PASSED
+
+================================================================================
+Test: Thin Font Weight
+================================================================================
+
+'Kõned mobiilidele': font-weight = 100 (expected: 100)
+
+'Äripakett': font-weight = 100 (expected: 100)
+✓ PASSED
+
+================================================================================
+Test: First Column Width
+================================================================================
+
+First column width: 34.80733623092366%
+Expected: ~35% (from PDF)
+✓ First column width is acceptable
+✓ PASSED
+
+================================================================================
+Test: Line Height
+================================================================================
+  Found line heights: ['1.1', '1.0', '1.0', '1.0', '1.0', '1.0', '1.0', '1.0', '1.0', '1.0', '1.0', '1.0', '1.0', '1.0', '1.0', '1.0', '1.0', '1.0', '1.0', '1.0']...
+✓ PASSED
+
+================================================================================
+Test: Table Structure
+================================================================================
+
+================================================================================
+ELISA INVOICE TABLE STRUCTURE
+================================================================================
+Found 1 table(s)
+
+--- Table 1 ---
+  Row 0: SeoWeb OÜ | Kliendinumber: 201│B | │B | │B | │B | │B | │B | │B
+  Row 1: Mobiiltelefon: 55526556| SeoWe│B | │B | │B | │B | │B | │B | │B
+  Row 2: │B | Arv│B | Kestus/Maht (KB)│B | Summa│B | Käibemaks│B | Summa kokku│B | │B
+  Row 3: Paketis sisalduvad teenused│B | │B | │B | │B | │B | │B | │B
+  Row 4: Kõned mobiilidele│B | 16│B | 00:12:15│B | │B | │B | │B | │B
+  Row 5: Kuutasud│B | │B | │B | │B | │B | │B | │B
+  Row 6: Äripakett D 1│B | 1│B | 0│B | 2,000│B | 0,480│B | 2,480│B | │B
+  Row 7: Kokku│B | │B | │B | │B | │B | │B | │B
+  Row 8: Mobiiltelefon: 55526556, arve │B | │B | │B | 2,000│B | 0,480│B | 2,480│B | │B
+  Row 9: Mobiiltelefon: 56471230| SeoWe│B | │B | │B | │B | │B | │B | │B
+  Row 10: │B | Arv│B | Kestus/Maht (KB)│B | Summa│B | Käibemaks│B | Summa kokku│B | │B
+  Row 11: Paketis sisalduvad teenused│B | │B | │B | │B | │B | │B | │B
+  Row 12: Kõned mobiilidele│B | 29│B | 05:43:08│B | │B | │B | │B | │B
+  Row 13: Kuutasud│B | │B | │B | │B | │B | │B | │B
+  Row 14: Äripakett B 2│B | 1│B | 0│B | 5,000│B | 1,200│B | 6,200│B | │B
+  Row 15: Kokku│B | │B | │B | │B | │B | │B | │B
+  Row 16: Mobiiltelefon: 56471230, arve │B | │B | │B | 5,000│B | 1,200│B | 6,200│B | │B
+✓ PASSED
+
+================================================================================
+Test Summary: 11 passed, 0 failed
+================================================================================

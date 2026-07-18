@@ -1,0 +1,578 @@
+{
+  "Elisa-Thin": {
+    "name": "Elisa-Thin",
+    "hash": "3717f3e56ffb57d4",
+    "css_file": "Elisa-Thin.css",
+    "weight": 100,
+    "style": "normal",
+    "family": "Elisa",
+    "ext": "ttf"
+  },
+  "Elisa-Regular": {
+    "name": "Elisa-Regular",
+    "hash": "6a960245be08d39b",
+    "css_file": "Elisa-Regular.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "Elisa",
+    "ext": "ttf"
+  },
+  "BCDEEECenturyGothic": {
+    "name": "BCDEEE+CenturyGothic",
+    "hash": "4601e48beac404ce",
+    "css_file": "BCDEEECenturyGothic.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "BCDEEE+CenturyGothic",
+    "ext": "ttf"
+  },
+  "BCDFEEGaramond": {
+    "name": "BCDFEE+Garamond",
+    "hash": "3fd646e76dfe6cc5",
+    "css_file": "BCDFEEGaramond.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "BCDFEE+Garamond",
+    "ext": "ttf"
+  },
+  "BCDGEECenturyGothic-Bold": {
+    "name": "BCDGEE+CenturyGothic-Bold",
+    "hash": "e344fc0bcf126ffc",
+    "css_file": "BCDGEECenturyGothic-Bold.css",
+    "weight": 700,
+    "style": "normal",
+    "family": "BCDGEE+CenturyGothic",
+    "ext": "ttf"
+  },
+  "BCDHEECalibri": {
+    "name": "BCDHEE+Calibri",
+    "hash": "77c71bbfde9fc195",
+    "css_file": "BCDHEECalibri.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "BCDHEE+Calibri",
+    "ext": "ttf"
+  },
+  "BCDIEECalibri-Bold": {
+    "name": "BCDIEE+Calibri-Bold",
+    "hash": "daeb43beb2425920",
+    "css_file": "BCDIEECalibri-Bold.css",
+    "weight": 700,
+    "style": "normal",
+    "family": "BCDIEE+Calibri",
+    "ext": "ttf"
+  },
+  "BCDJEEGaramond-Bold": {
+    "name": "BCDJEE+Garamond-Bold",
+    "hash": "2b15f33549a1bdf9",
+    "css_file": "BCDJEEGaramond-Bold.css",
+    "weight": 700,
+    "style": "normal",
+    "family": "BCDJEE+Garamond",
+    "ext": "ttf"
+  },
+  "JQRQXMHelvetica": {
+    "name": "JQRQXM+Helvetica",
+    "hash": "00930be51ecc8bd6",
+    "css_file": "JQRQXMHelvetica.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "JQRQXM+Helvetica",
+    "ext": "ttf"
+  },
+  "RUMLVEHelvetica-Bold": {
+    "name": "RUMLVE+Helvetica-Bold",
+    "hash": "56398b2c7fca85c9",
+    "css_file": "RUMLVEHelvetica-Bold.css",
+    "weight": 700,
+    "style": "normal",
+    "family": "RUMLVE+Helvetica",
+    "ext": "ttf"
+  },
+  "GothamRounded-Book": {
+    "name": "GothamRounded-Book",
+    "hash": "6b2bb32db1033057",
+    "css_file": "GothamRounded-Book.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "GothamRounded",
+    "ext": "ttf"
+  },
+  "VJWZUOOpen_Sans": {
+    "name": "VJWZUO+Open Sans",
+    "hash": "415e6f0efc5b6202",
+    "css_file": "VJWZUOOpen_Sans.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "VJWZUO+Open Sans",
+    "ext": "ttf"
+  },
+  "QDSAMGOpen_SansBold": {
+    "name": "QDSAMG+Open Sans,Bold",
+    "hash": "793e5b91250864b9",
+    "css_file": "QDSAMGOpen_SansBold.css",
+    "weight": 700,
+    "style": "normal",
+    "family": "QDSAMG+Open Sans,Bold",
+    "ext": "ttf"
+  },
+  "ArialMT": {
+    "name": "ArialMT",
+    "hash": "e3b0c44298fc1c14",
+    "css_file": "ArialMT.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "ArialMT",
+    "ext": "n/a"
+  },
+  "Arial-BoldMT": {
+    "name": "Arial-BoldMT",
+    "hash": "e3b0c44298fc1c14",
+    "css_file": "Arial-BoldMT.css",
+    "weight": 700,
+    "style": "normal",
+    "family": "Arial",
+    "ext": "n/a"
+  },
+  "ABCDEETahoma-Bold": {
+    "name": "ABCDEE+Tahoma-Bold",
+    "hash": "9aaa87642cd53266",
+    "css_file": "ABCDEETahoma-Bold.css",
+    "weight": 700,
+    "style": "normal",
+    "family": "ABCDEE+Tahoma",
+    "ext": "ttf"
+  },
+  "ABCDEETahoma": {
+    "name": "ABCDEE+Tahoma",
+    "hash": "c51d83f5a7ed20d5",
+    "css_file": "ABCDEETahoma.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "ABCDEE+Tahoma",
+    "ext": "ttf"
+  },
+  "Arial-ItalicMT": {
+    "name": "Arial-ItalicMT",
+    "hash": "e3b0c44298fc1c14",
+    "css_file": "Arial-ItalicMT.css",
+    "weight": 400,
+    "style": "italic",
+    "family": "Arial",
+    "ext": "n/a"
+  },
+  "Helvetica": {
+    "name": "Helvetica",
+    "hash": "e3b0c44298fc1c14",
+    "css_file": "Helvetica.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "Helvetica",
+    "ext": "n/a"
+  },
+  "Helvetica-Bold": {
+    "name": "Helvetica-Bold",
+    "hash": "e3b0c44298fc1c14",
+    "css_file": "Helvetica-Bold.css",
+    "weight": 700,
+    "style": "normal",
+    "family": "Helvetica",
+    "ext": "n/a"
+  },
+  "Times-Roman": {
+    "name": "Times-Roman",
+    "hash": "e3b0c44298fc1c14",
+    "css_file": "Times-Roman.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "Times",
+    "ext": "n/a"
+  },
+  "Times-Bold": {
+    "name": "Times-Bold",
+    "hash": "e3b0c44298fc1c14",
+    "css_file": "Times-Bold.css",
+    "weight": 700,
+    "style": "normal",
+    "family": "Times",
+    "ext": "n/a"
+  },
+  "EAAAACAmazonEmber-Light": {
+    "name": "EAAAAC+AmazonEmber-Light",
+    "hash": "aa5a129a4f136452",
+    "css_file": "EAAAACAmazonEmber-Light.css",
+    "weight": 300,
+    "style": "normal",
+    "family": "EAAAAC+AmazonEmber",
+    "ext": "ttf"
+  },
+  "EAAAAAAmazonEmber-Bold": {
+    "name": "EAAAAA+AmazonEmber-Bold",
+    "hash": "4833f3e19e8992a7",
+    "css_file": "EAAAAAAmazonEmber-Bold.css",
+    "weight": 700,
+    "style": "normal",
+    "family": "EAAAAA+AmazonEmber",
+    "ext": "ttf"
+  },
+  "EAAAADAmazonEmber-Regular": {
+    "name": "EAAAAD+AmazonEmber-Regular",
+    "hash": "3d54d876f076a772",
+    "css_file": "EAAAADAmazonEmber-Regular.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "EAAAAD+AmazonEmber",
+    "ext": "ttf"
+  },
+  "EAAAABArialMT": {
+    "name": "EAAAAB+ArialMT",
+    "hash": "6ebf03e76bed7b34",
+    "css_file": "EAAAABArialMT.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "EAAAAB+ArialMT",
+    "ext": "ttf"
+  },
+  "AAAAAAInter-SemiBold": {
+    "name": "AAAAAA+Inter-SemiBold",
+    "hash": "833efffda0d52d19",
+    "css_file": "AAAAAAInter-SemiBold.css",
+    "weight": 600,
+    "style": "normal",
+    "family": "AAAAAA+Inter",
+    "ext": "ttf"
+  },
+  "BAAAAAInter-Regular": {
+    "name": "BAAAAA+Inter-Regular",
+    "hash": "3766f4b2b1c9a726",
+    "css_file": "BAAAAAInter-Regular.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "BAAAAA+Inter",
+    "ext": "ttf"
+  },
+  "CAAAAAInter-Bold": {
+    "name": "CAAAAA+Inter-Bold",
+    "hash": "03c4e96231ff6956",
+    "css_file": "CAAAAAInter-Bold.css",
+    "weight": 700,
+    "style": "normal",
+    "family": "CAAAAA+Inter",
+    "ext": "ttf"
+  },
+  "DAAAAAInter-Bold": {
+    "name": "DAAAAA+Inter-Bold",
+    "hash": "2bacf37bb5b872a4",
+    "css_file": "DAAAAAInter-Bold.css",
+    "weight": 700,
+    "style": "normal",
+    "family": "DAAAAA+Inter",
+    "ext": "ttf"
+  },
+  "BCDEEEMicrosoftYaHei": {
+    "name": "BCDEEE+MicrosoftYaHei",
+    "hash": "dcfba85d188ee871",
+    "css_file": "BCDEEEMicrosoftYaHei.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "BCDEEE+MicrosoftYaHei",
+    "ext": "ttf"
+  },
+  "BCDFEECalibri": {
+    "name": "BCDFEE+Calibri",
+    "hash": "bfed658f325f8c64",
+    "css_file": "BCDFEECalibri.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "BCDFEE+Calibri",
+    "ext": "ttf"
+  },
+  "BCDEEEVerdana": {
+    "name": "BCDEEE+Verdana",
+    "hash": "dd6bdfbd989d0102",
+    "css_file": "BCDEEEVerdana.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "BCDEEE+Verdana",
+    "ext": "ttf"
+  },
+  "BCDFEEBookAntiqua": {
+    "name": "BCDFEE+BookAntiqua",
+    "hash": "fa9cb372b8b8eea3",
+    "css_file": "BCDFEEBookAntiqua.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "BCDFEE+BookAntiqua",
+    "ext": "ttf"
+  },
+  "BCDGEECalibri-Bold": {
+    "name": "BCDGEE+Calibri-Bold",
+    "hash": "161fb3900afb9db0",
+    "css_file": "BCDGEECalibri-Bold.css",
+    "weight": 700,
+    "style": "normal",
+    "family": "BCDGEE+Calibri",
+    "ext": "ttf"
+  },
+  "BCDIEEBookAntiqua-Italic": {
+    "name": "BCDIEE+BookAntiqua-Italic",
+    "hash": "0fc7ac869323502c",
+    "css_file": "BCDIEEBookAntiqua-Italic.css",
+    "weight": 400,
+    "style": "italic",
+    "family": "BCDIEE+BookAntiqua",
+    "ext": "ttf"
+  },
+  "QZQACBFoundersGrotesk-Medium": {
+    "name": "QZQACB+FoundersGrotesk-Medium",
+    "hash": "b75f13226c813f31",
+    "css_file": "QZQACBFoundersGrotesk-Medium.css",
+    "weight": 500,
+    "style": "normal",
+    "family": "QZQACB+FoundersGrotesk",
+    "ext": "cid"
+  },
+  "LVNOALFoundersGrotesk-Medium": {
+    "name": "LVNOAL+FoundersGrotesk-Medium",
+    "hash": "b75f13226c813f31",
+    "css_file": "LVNOALFoundersGrotesk-Medium.css",
+    "weight": 500,
+    "style": "normal",
+    "family": "LVNOAL+FoundersGrotesk",
+    "ext": "cid"
+  },
+  "LVNTALFoundersGrotesk-Medium": {
+    "name": "LVNTAL+FoundersGrotesk-Medium",
+    "hash": "b75f13226c813f31",
+    "css_file": "LVNTALFoundersGrotesk-Medium.css",
+    "weight": 500,
+    "style": "normal",
+    "family": "LVNTAL+FoundersGrotesk",
+    "ext": "cid"
+  },
+  "RWKKGZFoundersGrotesk-Medium": {
+    "name": "RWKKGZ+FoundersGrotesk-Medium",
+    "hash": "b75f13226c813f31",
+    "css_file": "RWKKGZFoundersGrotesk-Medium.css",
+    "weight": 500,
+    "style": "normal",
+    "family": "RWKKGZ+FoundersGrotesk",
+    "ext": "cid"
+  },
+  "BAAAAAMontserrat-SemiBold": {
+    "name": "BAAAAA+Montserrat-SemiBold",
+    "hash": "f93be34d5be69623",
+    "css_file": "BAAAAAMontserrat-SemiBold.css",
+    "weight": 600,
+    "style": "normal",
+    "family": "BAAAAA+Montserrat",
+    "ext": "ttf"
+  },
+  "CAAAAAMontserrat-SemiBold": {
+    "name": "CAAAAA+Montserrat-SemiBold",
+    "hash": "eefdf6ee5083746e",
+    "css_file": "CAAAAAMontserrat-SemiBold.css",
+    "weight": 600,
+    "style": "normal",
+    "family": "CAAAAA+Montserrat",
+    "ext": "ttf"
+  },
+  "AAAAAAMontserrat-ExtraBold": {
+    "name": "AAAAAA+Montserrat-ExtraBold",
+    "hash": "0937fc7aead70264",
+    "css_file": "AAAAAAMontserrat-ExtraBold.css",
+    "weight": 800,
+    "style": "normal",
+    "family": "AAAAAA+Montserrat",
+    "ext": "ttf"
+  },
+  "OLCICWMontserrat-ExtraBold": {
+    "name": "OLCICW+Montserrat-ExtraBold",
+    "hash": "2e4a7c573efa0968",
+    "css_file": "OLCICWMontserrat-ExtraBold.css",
+    "weight": 800,
+    "style": "normal",
+    "family": "OLCICW+Montserrat",
+    "ext": "cff"
+  },
+  "UMBXIKMontserrat-Regular": {
+    "name": "UMBXIK+Montserrat-Regular",
+    "hash": "55c2c252fa206586",
+    "css_file": "UMBXIKMontserrat-Regular.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "UMBXIK+Montserrat",
+    "ext": "ttf"
+  },
+  "BHQNCWMontserrat-Bold": {
+    "name": "BHQNCW+Montserrat-Bold",
+    "hash": "ccae0a076ed4beb4",
+    "css_file": "BHQNCWMontserrat-Bold.css",
+    "weight": 700,
+    "style": "normal",
+    "family": "BHQNCW+Montserrat",
+    "ext": "ttf"
+  },
+  "IXAYWICambria": {
+    "name": "IXAYWI+Cambria",
+    "hash": "0b9d00868c497d9c",
+    "css_file": "IXAYWICambria.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "IXAYWI+Cambria",
+    "ext": "ttf"
+  },
+  "FAQLGOMontserrat-Regular": {
+    "name": "FAQLGO+Montserrat-Regular",
+    "hash": "3a8bdcdf56e346ef",
+    "css_file": "FAQLGOMontserrat-Regular.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "FAQLGO+Montserrat",
+    "ext": "ttf"
+  },
+  "FVMGGOMontserrat-Italic": {
+    "name": "FVMGGO+Montserrat-Italic",
+    "hash": "c76a6fb9e54b6518",
+    "css_file": "FVMGGOMontserrat-Italic.css",
+    "weight": 400,
+    "style": "italic",
+    "family": "FVMGGO+Montserrat",
+    "ext": "ttf"
+  },
+  "TYNMUMArialMT": {
+    "name": "TYNMUM+ArialMT",
+    "hash": "d88210aeecef7c2f",
+    "css_file": "TYNMUMArialMT.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "TYNMUM+ArialMT",
+    "ext": "ttf"
+  },
+  "PSPOQUTimesNewRomanPSMT": {
+    "name": "PSPOQU+TimesNewRomanPSMT",
+    "hash": "dbb2bf4b17da4b1d",
+    "css_file": "PSPOQUTimesNewRomanPSMT.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "PSPOQU+TimesNewRomanPSMT",
+    "ext": "ttf"
+  },
+  "MQBWAAArial-BoldMT": {
+    "name": "MQBWAA+Arial-BoldMT",
+    "hash": "8ff375ced6fa1aca",
+    "css_file": "MQBWAAArial-BoldMT.css",
+    "weight": 700,
+    "style": "normal",
+    "family": "MQBWAA+Arial",
+    "ext": "ttf"
+  },
+  "MIDWAACambria": {
+    "name": "MIDWAA+Cambria",
+    "hash": "993c48242ddd73ad",
+    "css_file": "MIDWAACambria.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "MIDWAA+Cambria",
+    "ext": "ttf"
+  },
+  "JJNEKGCambria-Italic": {
+    "name": "JJNEKG+Cambria-Italic",
+    "hash": "20ea80a56ab83ad4",
+    "css_file": "JJNEKGCambria-Italic.css",
+    "weight": 400,
+    "style": "italic",
+    "family": "JJNEKG+Cambria",
+    "ext": "ttf"
+  },
+  "GHZMUMCambria-Italic": {
+    "name": "GHZMUM+Cambria-Italic",
+    "hash": "f4ff007a3797e82e",
+    "css_file": "GHZMUMCambria-Italic.css",
+    "weight": 400,
+    "style": "italic",
+    "family": "GHZMUM+Cambria",
+    "ext": "ttf"
+  },
+  "EEAASQSymbolMT": {
+    "name": "EEAASQ+SymbolMT",
+    "hash": "f3142ceb84fb38a0",
+    "css_file": "EEAASQSymbolMT.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "EEAASQ+SymbolMT",
+    "ext": "ttf"
+  },
+  "CWBOQUTimesNewRomanPS-BoldMT": {
+    "name": "CWBOQU+TimesNewRomanPS-BoldMT",
+    "hash": "0740d6ba11f1e650",
+    "css_file": "CWBOQUTimesNewRomanPS-BoldMT.css",
+    "weight": 700,
+    "style": "normal",
+    "family": "CWBOQU+TimesNewRomanPS",
+    "ext": "ttf"
+  },
+  "DKPZESMontserrat-Bold": {
+    "name": "DKPZES+Montserrat-Bold",
+    "hash": "d198ce0defb672a9",
+    "css_file": "DKPZESMontserrat-Bold.css",
+    "weight": 700,
+    "style": "normal",
+    "family": "DKPZES+Montserrat",
+    "ext": "ttf"
+  },
+  "YQYQMCCourierNewPSMT": {
+    "name": "YQYQMC+CourierNewPSMT",
+    "hash": "721c48b8bc8bb2c2",
+    "css_file": "YQYQMCCourierNewPSMT.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "YQYQMC+CourierNewPSMT",
+    "ext": "ttf"
+  },
+  "UKANIKCalibri-Bold": {
+    "name": "UKANIK+Calibri-Bold",
+    "hash": "b00c41f2da699049",
+    "css_file": "UKANIKCalibri-Bold.css",
+    "weight": 700,
+    "style": "normal",
+    "family": "UKANIK+Calibri",
+    "ext": "ttf"
+  },
+  "QEXPESCalibri": {
+    "name": "QEXPES+Calibri",
+    "hash": "3fe0d27b1ba5f3d5",
+    "css_file": "QEXPESCalibri.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "QEXPES+Calibri",
+    "ext": "ttf"
+  },
+  "BFKDCWSegoeUI": {
+    "name": "BFKDCW+SegoeUI",
+    "hash": "07cfcdc8cfa29048",
+    "css_file": "BFKDCWSegoeUI.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "BFKDCW+SegoeUI",
+    "ext": "ttf"
+  },
+  "YDWLMCMontserrat-BoldItalic": {
+    "name": "YDWLMC+Montserrat-BoldItalic",
+    "hash": "4271a0ec1f67a37a",
+    "css_file": "YDWLMCMontserrat-BoldItalic.css",
+    "weight": 700,
+    "style": "italic",
+    "family": "YDWLMC+Montserrat",
+    "ext": "ttf"
+  },
+  "SUBAABRoboto-Regular": {
+    "name": "SUBAAB+Roboto-Regular",
+    "hash": "9c2275c47822db58",
+    "css_file": "SUBAABRoboto-Regular.css",
+    "weight": 400,
+    "style": "normal",
+    "family": "SUBAAB+Roboto",
+    "ext": "ttf"
+  }
+}

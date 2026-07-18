@@ -1,0 +1,8 @@
+
+@font-face {
+    font-family: 'Arial';
+    src: url('data:font/truetype;base64,') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
