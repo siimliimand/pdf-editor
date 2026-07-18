@@ -29,7 +29,7 @@ function extractBodyContent(html: string): string {
 
   // If no dimensions from CSS, calculate from element positions
   if (pageWidth === 0 || pageHeight === 0) {
-    // Find max top/height and left/width from absolutely positioned divs
+    // Find max right/bottom from absolutely positioned divs with actual height (skip SVGs with height: 0)
     let maxRight = 0;
     let maxBottom = 0;
     const posRegex = /position:\s*absolute[^"]*?top:\s*([\d.]+)px[^"]*?left:\s*([\d.]+)px[^"]*?width:\s*([\d.]+)px[^"]*?height:\s*([\d.]+)px/g;
@@ -39,6 +39,8 @@ function extractBodyContent(html: string): string {
       const left = parseFloat(match[2]);
       const width = parseFloat(match[3]);
       const height = parseFloat(match[4]);
+      // Skip elements with zero height (SVGs, empty divs)
+      if (height <= 0) continue;
       if (left + width > maxRight) maxRight = left + width;
       if (top + height > maxBottom) maxBottom = top + height;
     }
