@@ -32,13 +32,18 @@ function extractBodyContent(html: string): string {
     // Find max right/bottom from absolutely positioned divs with actual height (skip SVGs with height: 0)
     let maxRight = 0;
     let maxBottom = 0;
-    const posRegex = /position:\s*absolute[^"]*?top:\s*([\d.]+)px[^"]*?left:\s*([\d.]+)px[^"]*?width:\s*([\d.]+)px[^"]*?height:\s*([\d.]+)px/g;
-    let match;
-    while ((match = posRegex.exec(bodyContent)) !== null) {
-      const top = parseFloat(match[1]);
-      const left = parseFloat(match[2]);
-      const width = parseFloat(match[3]);
-      const height = parseFloat(match[4]);
+    // Match all absolutely positioned elements and extract their dimensions
+    const allElements = bodyContent.match(/style="[^"]*position:\s*absolute[^"]*"/g) || [];
+    for (const styleStr of allElements) {
+      const topMatch = styleStr.match(/top:\s*([\d.]+)px/);
+      const leftMatch = styleStr.match(/left:\s*([\d.]+)px/);
+      const widthMatch = styleStr.match(/width:\s*([\d.]+)px/);
+      const heightMatch = styleStr.match(/height:\s*([\d.]+)px/);
+      if (!topMatch || !leftMatch || !widthMatch || !heightMatch) continue;
+      const top = parseFloat(topMatch[1]);
+      const left = parseFloat(leftMatch[1]);
+      const width = parseFloat(widthMatch[1]);
+      const height = parseFloat(heightMatch[1]);
       // Skip elements with zero height (SVGs, empty divs)
       if (height <= 0) continue;
       if (left + width > maxRight) maxRight = left + width;
@@ -46,6 +51,9 @@ function extractBodyContent(html: string): string {
     }
     if (maxRight > 0 && pageWidth === 0) pageWidth = Math.ceil(maxRight + 20);
     if (maxBottom > 0 && pageHeight === 0) pageHeight = Math.ceil(maxBottom + 20);
+    // Fallback: A4 at 96 DPI
+    if (pageWidth === 0) pageWidth = 794;
+    if (pageHeight === 0) pageHeight = 1123;
   }
 
   // Inject inline dimensions on page-container divs
