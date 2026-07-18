@@ -27,28 +27,10 @@ function extractBodyContent(html: string): string {
   const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
   let bodyContent = bodyMatch ? bodyMatch[1].trim() : html;
 
-  // If no dimensions from CSS, calculate from element positions
+  // If no dimensions from CSS, use A4 at 96 DPI as default
   if (pageWidth === 0 || pageHeight === 0) {
-    // Find max right/bottom by parsing all left: and top: values
-    let maxRight = 0;
-    let maxBottom = 0;
-    const leftRegex = /left:\s*([\d.]+)px/g;
-    const topRegex = /top:\s*([\d.]+)px/g;
-    let match;
-    while ((match = leftRegex.exec(bodyContent)) !== null) {
-      const left = parseFloat(match[1]);
-      if (left > maxRight) maxRight = left;
-    }
-    while ((match = topRegex.exec(bodyContent)) !== null) {
-      const top = parseFloat(match[1]);
-      if (top > maxBottom) maxBottom = top;
-    }
-    // Add padding and minimum size
-    if (maxRight > 0 && pageWidth === 0) pageWidth = Math.ceil(maxRight + 50);
-    if (maxBottom > 0 && pageHeight === 0) pageHeight = Math.ceil(maxBottom + 50);
-    // Fallback: A4 at 96 DPI
-    if (pageWidth === 0) pageWidth = 794;
-    if (pageHeight === 0) pageHeight = 1123;
+    pageWidth = 794;
+    pageHeight = 1123;
   }
 
   // Inject inline dimensions on page-container divs
