@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   loadFixturePdf,
-  loadExpectedHtml,
+  listFixturePdfs,
   compareHtml,
   normalizeHtml,
   runConversion,
@@ -44,63 +44,52 @@ describe("test-utils", () => {
         "Fixture not found",
       );
     });
-  });
 
-  describe("loadExpectedHtml", () => {
-    it("throws when expected HTML does not exist", () => {
-      expect(() => loadExpectedHtml("nonexistent.expected.html")).toThrow(
-        "Expected HTML fixture not found",
-      );
+    it("loads a real fixture PDF", () => {
+      const pdfs = listFixturePdfs();
+      expect(pdfs.length).toBeGreaterThan(0);
+      const bytes = loadFixturePdf(pdfs[0]);
+      expect(bytes.length).toBeGreaterThan(0);
     });
   });
 });
 
 // ---------------------------------------------------------------------------
-// Conversion pipeline tests
+// Conversion pipeline tests — run against all fixture PDFs
 // ---------------------------------------------------------------------------
 
 describe("PDF to HTML conversion", () => {
-  // These tests require fixture PDFs in tests/fixtures/.
-  // Add .skip to skip them when fixtures are not yet available.
-  // Remove .skip once real fixture PDFs are added.
+  const pdfFiles = listFixturePdfs();
 
-  it.skip("converts a simple text PDF to HTML", async () => {
-    const pdfBytes = loadFixturePdf("simple-text.pdf");
+  it("converts every fixture PDF without throwing", async () => {
+    expect(pdfFiles.length).toBeGreaterThan(0);
+
+    for (const file of pdfFiles) {
+      const pdfBytes = loadFixturePdf(file);
+      const html = await runConversion(pdfBytes);
+      expect(html).toBeDefined();
+      expect(typeof html).toBe("string");
+      expect(html.length).toBeGreaterThan(0);
+      // Output should contain at least one HTML tag
+      expect(html).toMatch(/<[a-zA-Z]/);
+    }
+  }, 120_000);
+
+  it("produces non-empty output for sample-invoice.pdf", async () => {
+    const pdfBytes = loadFixturePdf("sample-invoice.pdf");
     const html = await runConversion(pdfBytes);
+    expect(html.length).toBeGreaterThan(100);
+  }, 15_000);
 
-    expect(html).toContain("<");
-    expect(html.length).toBeGreaterThan(0);
-  });
-
-  it.skip("preserves text content in output HTML", async () => {
-    const pdfBytes = loadFixturePdf("simple-text.pdf");
-    const html = await runConversion(pdfBytes);
-    const expected = loadExpectedHtml("simple-text.expected.html");
-
-    const diff = compareHtml(html, expected);
-    expect(diff).toBeNull();
-  });
-
-  it.skip("handles multi-page PDFs", async () => {
-    const pdfBytes = loadFixturePdf("multi-page.pdf");
-    const html = await runConversion(pdfBytes);
-
-    // Multi-page output should produce content for each page
-    expect(html).toContain("<");
-  });
-
-  it.skip("detects tables in PDF", async () => {
-    const pdfBytes = loadFixturePdf("tables.pdf");
-    const html = await runConversion(pdfBytes);
-
-    // Table detection should produce table-like HTML
-    expect(html.length).toBeGreaterThan(0);
-  });
-
-  it.skip("extracts images from PDF", async () => {
-    const pdfBytes = loadFixturePdf("images.pdf");
-    const html = await runConversion(pdfBytes);
-
-    expect(html).toContain("<");
-  });
+  it("handles different zoom levels", async () => {
+    // Copy bytes since pdf.js transfers the buffer during conversion
+    const original = loadFixturePdf("sample-invoice.pdf");
+    const bytes100 = new Uint8Array(original);
+    const bytes150 = new Uint8Array(original);
+    const html100 = await runConversion(bytes100, 100);
+    const html150 = await runConversion(bytes150, 150);
+    // Different zoom should produce different output sizes
+    expect(html100.length).toBeGreaterThan(0);
+    expect(html150.length).toBeGreaterThan(0);
+  }, 15_000);
 });

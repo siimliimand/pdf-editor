@@ -464,8 +464,19 @@ export async function resolveImageData(
   objId: string,
 ): Promise<PdfJsImageData | null> {
   return new Promise((resolve) => {
+    let resolved = false;
+    const timeout = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        resolve(null);
+      }
+    }, 500);
+
     try {
       page.commonObjs.get(objId, (data: PdfJsImageData | undefined) => {
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(timeout);
         if (
           data &&
           data.data &&
@@ -478,7 +489,11 @@ export async function resolveImageData(
         }
       });
     } catch {
-      resolve(null);
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(timeout);
+        resolve(null);
+      }
     }
   });
 }

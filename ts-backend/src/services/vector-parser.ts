@@ -306,6 +306,34 @@ export async function extractVectorsFromPage(
       closePath(builder);
     }
 
+    // constructPath: pdf.js bundles subpath ops (moveTo, lineTo, rectangle, etc.)
+    // into a single operation. args[0] = array of sub-OPS, args[1] = flat coords.
+    else if (op === OPS.constructPath) {
+      const subOps = args[0] as number[];
+      const coords = args[1] as number[];
+      let ci = 0;
+      for (const subOp of subOps) {
+        if (subOp === OPS.moveTo) {
+          moveTo(builder, coords[ci], coords[ci + 1]);
+          ci += 2;
+        } else if (subOp === OPS.lineTo) {
+          lineTo(builder, coords[ci], coords[ci + 1]);
+          ci += 2;
+        } else if (subOp === OPS.rectangle) {
+          rectangle(builder, coords[ci], coords[ci + 1], coords[ci + 2], coords[ci + 3]);
+          ci += 4;
+        } else if (subOp === OPS.curveTo) {
+          curveTo(builder, coords[ci], coords[ci + 1], coords[ci + 2], coords[ci + 3], coords[ci + 4], coords[ci + 5]);
+          ci += 6;
+        } else if (subOp === OPS.closePath) {
+          closePath(builder);
+        } else {
+          // Unknown sub-op — skip based on expected arg count.
+          break;
+        }
+      }
+    }
+
     // --- Styling ----------------------------------------------------------
     else if (op === OPS.setLineWidth) {
       state.linewidth = args[0];

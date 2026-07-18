@@ -205,7 +205,9 @@ export async function convertPdfToHtml(
     buffer.pdfBytes = pdfBytes;
 
     // 1. Parse PDF with pdf.js.
-    const loadingTask = getDocument({ data: pdfBytes });
+    // Copy bytes because pdf.js transfers the buffer to the worker.
+    const dataCopy = new Uint8Array(pdfBytes);
+    const loadingTask = getDocument({ data: dataCopy });
     const doc = await loadingTask.promise;
     buffer.doc = doc;
 
